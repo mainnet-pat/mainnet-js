@@ -127,6 +127,8 @@ jobs:
         run: echo "REPO_USER=$(echo $GITHUB_REPOSITORY | cut -d / -f1)" >> $GITHUB_ENV
       - name: Set REPO_NAME env
         run: echo "REPO_NAME=mainnet-python-generated" >> $GITHUB_ENV
+      - name: Set TAG_NAME env
+        run: echo "TAG_NAME=${GITHUB_REF#refs/*/}" >> $GITHUB_ENV
 
       - name: Set up Python 3.7
         uses: actions/setup-python@v1
@@ -140,6 +142,7 @@ jobs:
 
       - run: |
             python3 -m pip install --user --upgrade setuptools wheel
+            sed -i.bak "s#1.0.0#${{ env.TAG_NAME }}#g" setup.py
             python3 setup.py sdist bdist_wheel
 
       - name: Check if pypi token is set
@@ -157,13 +160,20 @@ jobs:
           user: __token__
           password: ${{ secrets.PYPI_TOKEN }}
 
-  # publish-php:
-  #   needs: buid-client
-  #   runs-on: ubuntu-latest
-  #   steps:
-  #     - if: format('{0}{1}', ${{ secrets.PACKAGIST_TOKEN }}, "x") == "x"
-  #       run: echo "PACKAGIST_TOKEN secret not set, skipping publishing"
-  #     - if: ${{ secrets.PACKAGIST_TOKEN }}
-  #       uses: wei/curl@v1
-  #       with:
-  #         args: -XPOST -H'content-type:application/json' 'https://packagist.org/api/update-package?username=mainnet-cash&apiToken=${{ secrets.PACKAGIST_TOKEN }}' -d'{"repository":{"url":"https://packagist.org/packages/mainnet-cash/mainnet-php-generated"}}'
+  publish-php:
+    needs: buid-client
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check if packagist token is set
+        run: |
+            if [ -n $PACKAGIST_TOKEN ]; then HAS_PACKAGIST_TOKEN='true' ; fi
+            echo "HAS_PACKAGIST_TOKEN=${HAS_PACKAGIST_TOKEN}" >> $GITHUB_ENV
+        env:
+          PACKAGIST_TOKEN: "${{ secrets.PACKAGIST_TOKEN }}"
+
+      - if: env.HAS_PACKAGIST_TOKEN == false
+        run: echo "PACKAGIST_TOKEN secret not set, skipping publishing"
+      - if: env.HAS_PACKAGIST_TOKEN
+        uses: wei/curl@v1
+        with:
+          args: -XPOST -H'content-type:application/json' 'https://packagist.org/api/update-package?username=mainnet-cash&apiToken=${{ secrets.PACKAGIST_TOKEN }}' -d'{"repository":{"url":"https://packagist.org/packages/mainnet-cash/mainnet-php-generated"}}'
