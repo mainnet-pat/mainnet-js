@@ -126,7 +126,7 @@ jobs:
       - name: Initialize workflow variables
         run: |
             if [ -n $PYPI_TOKEN ]; then HAS_PYPI_TOKEN='true' ; fi
-            echo ::set-output name=HAS_PYPI_TOKEN_TOKEN::${HAS_PYPI_TOKEN}
+            echo ::set-output name=HAS_PYPI_TOKEN::${HAS_PYPI_TOKEN}
         env:
           PYPI_TOKEN: "${{ secrets.PYPI_TOKEN }}"
 
