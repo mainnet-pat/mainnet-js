@@ -178,6 +178,14 @@ jobs:
         # with:
         #   args: -vv -XPOST -H'content-type:application/json' 'https://packagist.org/api/update-package?username=mainnet-cash&apiToken=${{ secrets.PACKAGIST_TOKEN }}' -d'{"repository":{"url":"https://packagist.org/packages/mainnet-cash/mainnet-php-generated"}}'
 
-        uses: enflo/curl-action@v1.2
+        # uses: enflo/curl-action@v1.2
+        # with:
+        #   curl: -H'content-type:application/json' -d'{"repository":{"url":"https://packagist.org/packages/mainnet-cash/mainnet-php-generated"}} 'https://packagist.org/api/update-package?username=mainnet-cash&apiToken=${{ secrets.PACKAGIST_TOKEN }}'
+
+        uses: indiesdev/curl@v1
         with:
-          curl: -H'content-type:application/json' -d'{"repository":{"url":"https://packagist.org/packages/mainnet-cash/mainnet-php-generated"}} 'https://packagist.org/api/update-package?username=mainnet-cash&apiToken=${{ secrets.PACKAGIST_TOKEN }}'
+          url: https://packagist.org/api/update-package?username=mainnet-cash&apiToken=${{ secrets.PACKAGIST_TOKEN }}
+          method: 'POST'
+          accept: 200,201,202,204
+          headers: '{ "content-type": "application/json" }'
+          body: '{"repository":{"url":"https://packagist.org/packages/mainnet-cash/mainnet-php-generated"}}'
