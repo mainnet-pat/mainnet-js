@@ -123,7 +123,7 @@ jobs:
     needs: buid-client
     runs-on: ubuntu-latest
     steps:
-      - if: toJSON(secrets.PYPI_TOKEN) == null
+      - if: format('{0}{1}', ${{ secrets.PYPI_TOKEN }}, "x") == "x"
         run: echo "PYPI_TOKEN secret not set, skipping publishing"
       - if: ${{ secrets.PYPI_TOKEN }}
         uses: pypa/gh-action-pypi-publish@master
@@ -135,7 +135,7 @@ jobs:
     needs: buid-client
     runs-on: ubuntu-latest
     steps:
-      - if: toJSON(secrets.PACKAGIST_TOKEN) == null
+      - if: format('{0}{1}', ${{ secrets.PACKAGIST_TOKEN }}, "x") == "x"
         run: echo "PACKAGIST_TOKEN secret not set, skipping publishing"
       - if: ${{ secrets.PACKAGIST_TOKEN }}
         uses: wei/curl@v1
