@@ -180,4 +180,4 @@ jobs:
 
         uses: enflo/curl-action@v1.2
         with:
-          curl: "https://packagist.org/api/update-package?username=mainnet-cash&apiToken=${{ secrets.PACKAGIST_TOKEN }}" -H'content-type:application/json' -d'{"repository":{"url":"https://packagist.org/packages/mainnet-cash/mainnet-php-generated"}}
+          curl: -H'content-type:application/json' -d'{"repository":{"url":"https://packagist.org/packages/mainnet-cash/mainnet-php-generated"}} 'https://packagist.org/api/update-package?username=mainnet-cash&apiToken=${{ secrets.PACKAGIST_TOKEN }}'
