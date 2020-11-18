@@ -174,10 +174,10 @@ jobs:
       - if: env.HAS_PACKAGIST_TOKEN == false
         run: echo "PACKAGIST_TOKEN secret not set, skipping publishing"
       - if: env.HAS_PACKAGIST_TOKEN
-        uses: wei/curl@v1
-        with:
-          args: -vv -XPOST -H'content-type:application/json' 'https://packagist.org/api/update-package?username=mainnet-cash&apiToken=${{ secrets.PACKAGIST_TOKEN }}' -d'{"repository":{"url":"https://packagist.org/packages/mainnet-cash/mainnet-php-generated"}}'
+        # uses: wei/curl@v1
+        # with:
+        #   args: -vv -XPOST -H'content-type:application/json' 'https://packagist.org/api/update-package?username=mainnet-cash&apiToken=${{ secrets.PACKAGIST_TOKEN }}' -d'{"repository":{"url":"https://packagist.org/packages/mainnet-cash/mainnet-php-generated"}}'
 
-      - uses: enflo/curl-action@v1.2
+        uses: enflo/curl-action@v1.2
         with:
           curl: -vv -XPOST -H'content-type:application/json' 'https://packagist.org/api/update-package?username=mainnet-cash&apiToken=${{ secrets.PACKAGIST_TOKEN }}' -d'{"repository":{"url":"https://packagist.org/packages/mainnet-cash/mainnet-php-generated"}}'
