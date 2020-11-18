@@ -123,7 +123,26 @@ jobs:
     needs: buid-client
     runs-on: ubuntu-latest
     steps:
-      - name: Initialize workflow variables
+      - name: Set REPO_USER env
+        run: echo "REPO_USER=$(echo $GITHUB_REPOSITORY | cut -d / -f1)" >> $GITHUB_ENV
+      - name: Set REPO_NAME env
+        run: echo "REPO_NAME=mainnet-python-generated" >> $GITHUB_ENV
+
+      - name: Set up Python 3.7
+        uses: actions/setup-python@v1
+        with:
+          python-version: 3.7
+
+      - name: Checkout python repository
+        uses: actions/checkout@v2
+        with:
+          repository: '${{ env.REPO_USER }}/${{ env.REPO_NAME }}'
+
+      - run: |
+            python3 -m pip install --user --upgrade setuptools wheel
+            python3 setup.py sdist bdist_wheel
+
+      - name: Check if pypi token is set
         run: |
             if [ -n $PYPI_TOKEN ]; then HAS_PYPI_TOKEN='true' ; fi
             echo "HAS_PYPI_TOKEN=${HAS_PYPI_TOKEN}" >> $GITHUB_ENV
