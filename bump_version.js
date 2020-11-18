@@ -32,11 +32,13 @@ package.version = newVersion;
 
 fs.writeFileSync("./package.json", JSON.stringify(package, null, 2));
 
-swag = "./swagger/v1/api.yml";
+swag = ["./swagger/v1/api.yml", "./generated/serve/api/openapi.yaml"];
 
-fs.writeFileSync(
-  swag,
-  fs
-    .readFileSync(swag, "utf8")
-    .replace(/  version: .*/g, `  version: ${newVersion}`)
-);
+swag.forEach(val => {
+  fs.writeFileSync(
+    val,
+    fs
+      .readFileSync(val, "utf8")
+      .replace(/  version: .*/g, `  version: ${newVersion}`)
+  );
+});
