@@ -118,3 +118,21 @@ jobs:
             Release ${{ env.TAG_NAME }}
           draft: false
           prerelease: false
+
+  publish-python:
+    needs: release-libs
+    runs-on: ubuntu-latest
+    steps:
+      - run: echo "TODO: publish to pypi"
+
+  publish-php:
+    needs: release-libs
+    runs-on: ubuntu-latest
+    steps:
+      - run: echo "TODO: publish to packagist"
+
+  publish-go:
+    needs: release-libs
+    runs-on: ubuntu-latest
+    steps:
+      - run: echo "TODO: publish to go modules"
