@@ -80,7 +80,7 @@ jobs:
       - name: Set REPO_USER env
         run: echo "REPO_USER=$(echo $GITHUB_REPOSITORY | cut -d / -f1)" >> $GITHUB_ENV
       - name: Set REPO_NAME env
-        run: echo "REPO_NAME=mainnet-${{ matrix.language }}-generated
+        run: echo "REPO_NAME=mainnet-${{ matrix.language }}-generated" >> $GITHUB_ENV
       - name: Set TAG_NAME env
         run: echo "TAG_NAME=${GITHUB_REF#refs/*/}" >> $GITHUB_ENV
       - name: Clone repo, create new tag
