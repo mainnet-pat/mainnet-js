@@ -34,7 +34,7 @@ fs.writeFileSync("./package.json", JSON.stringify(package, null, 2));
 
 swag = ["./swagger/v1/api.yml", "./generated/serve/api/openapi.yaml"];
 
-swag.forEach(val => {
+swag.forEach((val) => {
   fs.writeFileSync(
     val,
     fs
