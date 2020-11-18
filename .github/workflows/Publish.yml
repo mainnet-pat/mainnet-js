@@ -123,21 +123,28 @@ jobs:
     needs: buid-client
     runs-on: ubuntu-latest
     steps:
-      - if: format('{0}{1}', ${{ secrets.PYPI_TOKEN }}, "x") == "x"
+      - name: Initialize workflow variables
+        run: |
+            if [-n $PYPI_TOKEN]; then HAS_PYPI_TOKEN='true' ; fi
+            echo ::set-output name=HAS_PYPI_TOKEN_TOKEN::${HAS_PYPI_TOKEN}
+        env:
+          PYPI_TOKEN: "${{ secrets.PYPI_TOKEN }}"
+
+      - if: steps.vars.outputs.HAS_PYPI_TOKEN == false
         run: echo "PYPI_TOKEN secret not set, skipping publishing"
-      - if: ${{ secrets.PYPI_TOKEN }}
+      - if: steps.vars.outputs.HAS_PYPI_TOKEN
         uses: pypa/gh-action-pypi-publish@master
         with:
           user: __token__
           password: ${{ secrets.PYPI_TOKEN }}
 
-  publish-php:
-    needs: buid-client
-    runs-on: ubuntu-latest
-    steps:
-      - if: format('{0}{1}', ${{ secrets.PACKAGIST_TOKEN }}, "x") == "x"
-        run: echo "PACKAGIST_TOKEN secret not set, skipping publishing"
-      - if: ${{ secrets.PACKAGIST_TOKEN }}
-        uses: wei/curl@v1
-        with:
-          args: -XPOST -H'content-type:application/json' 'https://packagist.org/api/update-package?username=mainnet-cash&apiToken=${{ secrets.PACKAGIST_TOKEN }}' -d'{"repository":{"url":"https://packagist.org/packages/mainnet-cash/mainnet-php-generated"}}'
+  # publish-php:
+  #   needs: buid-client
+  #   runs-on: ubuntu-latest
+  #   steps:
+  #     - if: format('{0}{1}', ${{ secrets.PACKAGIST_TOKEN }}, "x") == "x"
+  #       run: echo "PACKAGIST_TOKEN secret not set, skipping publishing"
+  #     - if: ${{ secrets.PACKAGIST_TOKEN }}
+  #       uses: wei/curl@v1
+  #       with:
+  #         args: -XPOST -H'content-type:application/json' 'https://packagist.org/api/update-package?username=mainnet-cash&apiToken=${{ secrets.PACKAGIST_TOKEN }}' -d'{"repository":{"url":"https://packagist.org/packages/mainnet-cash/mainnet-php-generated"}}'
