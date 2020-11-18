@@ -68,7 +68,7 @@ jobs:
   #         git merge master
   #         git push origin deploy
 
-  release-libs:
+  buid-client:
     strategy:
       fail-fast: false
       max-parallel: 10
@@ -120,19 +120,24 @@ jobs:
           prerelease: false
 
   publish-python:
-    needs: release-libs
+    needs: buid-client
     runs-on: ubuntu-latest
     steps:
-      - run: echo "TODO publish to pypi"
+      - if: ${{ ! secrets.PYPI_TOKEN }}
+        run: echo "PYPI_TOKEN secret not set, skipping publishing"
+      - if: ${{ secrets.PYPI_TOKEN }}
+        uses: pypa/gh-action-pypi-publish@master
+        with:
+          user: __token__
+          password: ${{ secrets.PYPI_TOKEN }}
 
   publish-php:
-    needs: release-libs
+    needs: buid-client
     runs-on: ubuntu-latest
     steps:
-      - run: echo "TODO publish to packagist"
-
-  publish-go:
-    needs: release-libs
-    runs-on: ubuntu-latest
-    steps:
-      - run: echo "TODO publish to go modules"
+      - if: ${{ ! secrets.PACKAGIST_TOKEN }}
+        run: echo "PACKAGIST_TOKEN secret not set, skipping publishing"
+      - if: ${{ secrets.PACKAGIST_TOKEN }}
+        uses: wei/curl@v1
+        with:
+          args: -XPOST -H'content-type:application/json' 'https://packagist.org/api/update-package?username=mainnet-cash&apiToken=${{ secrets.PACKAGIST_TOKEN }}' -d'{"repository":{"url":"https://packagist.org/packages/mainnet-cash/mainnet-php-generated"}}'
