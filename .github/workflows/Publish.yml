@@ -91,6 +91,7 @@ jobs:
           git config --global user.name "Github CI"
           git tag -f ${{ env.TAG_NAME }}
           git push -f origin ${{ env.TAG_NAME }}
+          echo "TAG_SHA=$(git log -n1 --format=format:'%H')" >> $GITHUB_ENV
       - name: Create release
         uses: actions/create-release@v1
         env:
@@ -99,6 +100,7 @@ jobs:
           tag_name: ${{ github.ref }}
           release_name: Release ${{ env.TAG_NAME }}
           repo: mainnet-${{ matrix.language }}-generated
+          commitish: ${{ env.TAG_SHA }}
           owner: ${{ env.REPO_USER }}
           body: |
             Release ${{ env.TAG_NAME }}
