@@ -47,23 +47,54 @@ jobs:
   #     - name: Push image to docker hub
   #       run: docker push mainnet/mainnet-rest:${GITHUB_REF#refs/*/}
 
-  # Deploy to https://rest-unstable.mainnet.cash
-  # Done by pushing to deploy branch on github, this will trigger the deploy action
-  publish-unstable:
-    needs: build
+  # # Deploy to https://rest-unstable.mainnet.cash
+  # # Done by pushing to deploy branch on github, this will trigger the deploy action
+  # publish-unstable:
+  #   needs: build
+  #   runs-on: ubuntu-latest
+  #   steps:
+  #     - name: Set REPO_USER env
+  #       run: echo "REPO_USER=$(echo $GITHUB_REPOSITORY | cut -d / -f1)" >> $GITHUB_ENV
+  #     - name: Set REPO_NAME env
+  #       run: echo "REPO_NAME=$(echo $GITHUB_REPOSITORY | cut -d / -f2)" >> $GITHUB_ENV
+  #     - name: Clone repo, merge master into deploy, push deploy to repo
+  #       run: |
+  #         git clone https://${{ env.REPO_USER }}:${{ secrets.COMMIT_USER_TOKEN }}@github.com/${GITHUB_REPOSITORY} ${{ env.REPO_NAME }}
+  #         cd ${{ env.REPO_NAME }}
+  #         git config --global user.email "ci@github.com"
+  #         git config --global user.name "Github CI"
+  #         git fetch origin deploy
+  #         git checkout deploy
+  #         git merge master
+  #         git push origin deploy
+
+  release-libs:
+    strategy:
+      fail-fast: false
+      max-parallel: 10
+      matrix:
+        language: [php, python, go]
     runs-on: ubuntu-latest
     steps:
+      - uses: actions/checkout@v2
       - name: Set REPO_USER env
         run: echo "REPO_USER=$(echo $GITHUB_REPOSITORY | cut -d / -f1)" >> $GITHUB_ENV
-      - name: Set REPO_NAME env
-        run: echo "REPO_NAME=$(echo $GITHUB_REPOSITORY | cut -d / -f2)" >> $GITHUB_ENV
-      - name: Clone repo, merge master into deploy, push deploy to repo
+      - name: Set TAG_NAME env
+        run: echo "TAG_NAME=${GITHUB_REF#refs/*/}" >> $GITHUB_ENV
+      - name: debug
         run: |
-          git clone https://${{ env.REPO_USER }}:${{ secrets.COMMIT_USER_TOKEN }}@github.com/${GITHUB_REPOSITORY} ${{ env.REPO_NAME }}
-          cd ${{ env.REPO_NAME }}
-          git config --global user.email "ci@github.com"
-          git config --global user.name "Github CI"
-          git fetch origin deploy
-          git checkout deploy
-          git merge master
-          git push origin deploy
+          echo "github.ref ${{ github.ref }}"
+          echo "TAG_NAME ${{ env.TAG_NAME }}"
+      - name: Create Release
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: ${{ github.ref }}
+          release_name: Release ${{ github.ref }}
+          repo: mainnet-${{ matrix.language }}-generated
+          owber: ${{ env.REPO_USER }}
+          body: |
+            Release ${{ github.ref }}
+          draft: false
+          prerelease: false
