@@ -56,6 +56,7 @@ import { sumUtxoValue } from "../util/sumUtxoValue";
 import { sumSendRequestAmounts } from "../util/sumSendRequestAmounts";
 import { ElectrumRawTransaction } from "../network/interface";
 import { getRelayFeeCache } from "../network/getRelayFeeCache";
+import { Slp } from "./Slp";
 
 const secp256k1Promise = instantiateSecp256k1();
 const sha256Promise = instantiateSha256();
@@ -71,6 +72,8 @@ export class Wallet extends BaseWallet {
   publicKey?: Uint8Array;
   publicKeyHash?: Uint8Array;
   walletType?: WalletTypeEnum;
+  _slp?: Slp;
+  _slpAware: boolean = false;
 
   constructor(
     name = "",
@@ -80,6 +83,20 @@ export class Wallet extends BaseWallet {
     super(name, networkPrefix);
     this.name = name;
     this.walletType = walletType;
+  }
+
+  // interface to slp functions. see Slp.ts
+  get slp() {
+    if (!this._slp) {
+      this._slp = new Slp(this);
+    }
+
+    return this._slp;
+  }
+
+  public slpAware(value:boolean = true): Wallet {
+    this._slpAware = value;
+    return this;
   }
 
   // Initialize wallet from Wallet Import Format
@@ -353,7 +370,13 @@ export class Wallet extends BaseWallet {
     if (!this.provider) {
       throw Error("Attempting to get utxos from wallet without a client");
     }
-    return await this.provider.getUtxos(address);
+
+    if (this._slpAware) {
+      const [bchUtxos, slpUtxos] = await Promise.all([this.provider!.getUtxos(address), this.slp.getSlpUtxos(address)]);
+      return bchUtxos.filter(bchutxo => slpUtxos.findIndex(slputxo => bchutxo.txid === slputxo.txid && bchutxo.vout === slputxo.vout) === -1);
+    } else {
+      return await this.provider!.getUtxos(address);
+    }
   }
 
   // gets transaction history of this wallet
@@ -385,9 +408,9 @@ export class Wallet extends BaseWallet {
 
   // sets up a callback to be called upon wallet's balance change
   // can be cancelled by calling the function returned from this one
-  public async watchBalance(
+  public watchBalance(
     callback: (balance: BalanceResponse) => boolean | void
-  ): Promise<WatchBalanceCancel> {
+  ): WatchBalanceCancel {
     let watchBalanceCallback: () => void;
     let cancel: WatchBalanceCancel = async () => {
       await this.provider!.unsubscribeFromAddress(
@@ -400,10 +423,7 @@ export class Wallet extends BaseWallet {
       const balance = (await this.getBalance(undefined)) as BalanceResponse;
       await callback(balance);
     };
-    await this.provider!.subscribeToAddress(
-      this.cashaddr!,
-      watchBalanceCallback
-    );
+    this.provider!.subscribeToAddress(this.cashaddr!, watchBalanceCallback);
 
     return cancel;
   }
@@ -560,6 +580,7 @@ export class Wallet extends BaseWallet {
       sendRequests: sendRequests,
       privateKey: this.privateKey,
       relayFeePerByteInSatoshi: relayFeePerByteInSatoshi,
+      slpOutputs: []
     });
     const spendableAmount = await sumUtxoValue(fundingUtxos);
 
@@ -625,6 +646,7 @@ export class Wallet extends BaseWallet {
       sendRequests: sendRequests,
       privateKey: this.privateKey,
       relayFeePerByteInSatoshi: relayFeePerByteInSatoshi,
+      slpOutputs: []
     });
 
     const fundingUtxos = await getSuitableUtxos(
@@ -642,6 +664,7 @@ export class Wallet extends BaseWallet {
       sendRequests: sendRequests,
       privateKey: this.privateKey,
       relayFeePerByteInSatoshi: relayFeePerByteInSatoshi,
+      slpOutputs: []
     });
     const encodedTransaction = await buildEncodedTransaction(
       fundingUtxos,
