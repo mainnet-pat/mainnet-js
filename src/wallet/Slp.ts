@@ -1,15 +1,31 @@
-import { Wallet } from "./wif"
+import { Wallet } from "./wif";
 import bchaddr from "bchaddrjs-slp";
-import { SlpGenesisOptions, SlpGenesisResult, SlpMintResult, SlpSendRequest, SlpSendResult, SlpTokenBalance, SlpUtxoI } from "../slp/interface";
+import {
+  SlpGenesisOptions,
+  SlpGenesisResult,
+  SlpMintResult,
+  SlpSendRequest,
+  SlpSendResult,
+  SlpTokenBalance,
+  SlpUtxoI,
+} from "../slp/interface";
 import { SlpDbProvider } from "../slp/SlpDbProvider";
 import { ImageI } from "../qr/interface";
 import { qrAddress } from "../qr/Qr";
 import { TxI, UtxoI } from "../interface";
 import { ElectrumRawTransaction } from "../network/interface";
-import BigNumber from 'bignumber.js';
+import BigNumber from "bignumber.js";
 import { getRelayFeeCache } from "../network/getRelayFeeCache";
-import { buildEncodedTransaction, getFeeAmount, getSuitableUtxos } from "../transaction/Wif";
-import { SlpGetGenesisOutputs, SlpGetMintOutputs, SlpGetSendOutputs } from "../slp/SlpLibAuth";
+import {
+  buildEncodedTransaction,
+  getFeeAmount,
+  getSuitableUtxos,
+} from "../transaction/Wif";
+import {
+  SlpGetGenesisOutputs,
+  SlpGetMintOutputs,
+  SlpGetSendOutputs,
+} from "../slp/SlpLibAuth";
 import { binToHex } from "@bitauth/libauth";
 import { SendRequest } from "./model";
 import { SlpProvider } from "../slp/SlpProvider";
@@ -37,13 +53,20 @@ export class Slp {
     return this.provider.SlpUtxos(bchaddr.toSlpAddress(cashaddr));
   }
 
-  public async getBatonUtxos(ticker?: string, tokenId?: string): Promise<SlpUtxoI[]> {
+  public async getBatonUtxos(
+    ticker?: string,
+    tokenId?: string
+  ): Promise<SlpUtxoI[]> {
     return this.provider.SlpBatonUtxos(this.cashaddr, ticker, tokenId);
   }
 
   // gets transaction history of this wallet
   public async getHistory(ticker?: string, tokenId?: string): Promise<TxI[]> {
-    return this.provider.SlpAddressTransactionHistory(this.cashaddr, ticker, tokenId);
+    return this.provider.SlpAddressTransactionHistory(
+      this.cashaddr,
+      ticker,
+      tokenId
+    );
   }
 
   // gets last transaction of this wallet
@@ -59,8 +82,15 @@ export class Slp {
   }
 
   // gets wallet balances, optionally reduced to only tokens with certain ticker and tokenId
-  public async getBalance(ticker?: string, tokenId?: string): Promise<SlpTokenBalance[]> {
-    return this.provider.SlpAddressTokenBalances(this.cashaddr, ticker, tokenId);
+  public async getBalance(
+    ticker?: string,
+    tokenId?: string
+  ): Promise<SlpTokenBalance[]> {
+    return this.provider.SlpAddressTokenBalances(
+      this.cashaddr,
+      ticker,
+      tokenId
+    );
   }
 
   // sets up a callback to be called upon wallet's balance change
@@ -70,7 +100,12 @@ export class Slp {
     ticker?: string,
     tokenId?: string
   ): () => void {
-    return this.provider.SlpWatchBalance(callback, this.cashaddr, ticker, tokenId);
+    return this.provider.SlpWatchBalance(
+      callback,
+      this.cashaddr,
+      ticker,
+      tokenId
+    );
   }
 
   // waits for address balance to be greater than or equal to the target value
@@ -80,28 +115,131 @@ export class Slp {
     ticker: string,
     tokenId?: string
   ): Promise<SlpTokenBalance> {
-    return this.provider.SlpWaitForBalance(value, this.cashaddr, ticker, tokenId);
+    return this.provider.SlpWaitForBalance(
+      value,
+      this.cashaddr,
+      ticker,
+      tokenId
+    );
   }
 
   // waits for next transaction, program execution is halted
-  public async waitForTransaction(ticker?: string, tokenId?: string): Promise<any> {
+  public async waitForTransaction(
+    ticker?: string,
+    tokenId?: string
+  ): Promise<any> {
     return this.provider.SlpWaitForTransaction(this.cashaddr, ticker, tokenId);
   }
 
-  public async mint(amount: BigNumber.Value, ticker: string, tokenId?: string, endBaton: boolean=false
-    ): Promise<SlpMintResult> {
-    let [actualTokenId, result] = await this._processMint(amount, ticker, tokenId, endBaton);
+  public async genesis(options: SlpGenesisOptions): Promise<SlpGenesisResult> {
+    let result = await this._processGenesis(options);
     return {
-      txId: result,
-      balances: (await this.getBalance(ticker, actualTokenId)) as SlpTokenBalance[]
+      tokenId: result,
+      balances: (await this.getBalance(undefined, result)) as SlpTokenBalance[],
     };
   }
 
-  private async _processMint(amount: BigNumber.Value, ticker: string, tokenId?: string, endBaton: boolean=false
+  private async _processGenesis(options: SlpGenesisOptions) {
+    let slpOutputsResult = await SlpGetGenesisOutputs(
+      options,
+      this.cashaddr,
+      this.cashaddr
+    );
+
+    const fundingBchUtxos = await this.wallet
+      .slpAware(true)
+      .getAddressUtxos(this.wallet.cashaddr!);
+
+    return await this.processSlpTransaction(fundingBchUtxos, slpOutputsResult);
+  }
+
+  public async send(requests: SlpSendRequest[]): Promise<SlpSendResult> {
+    let [actualTokenId, result] = await this._processSendRequests(requests);
+    return {
+      txId: result!,
+      balances: (await this.getBalance(
+        undefined,
+        actualTokenId
+      )) as SlpTokenBalance[],
+    };
+  }
+
+  /**
+   * _processSendRequests given a list of sendRequests, estimate fees, build the transaction and submit it.
+   * @param  {SlpSendRequest[]} sendRequests
+   */
+  private async _processSendRequests(sendRequests: SlpSendRequest[]) {
+    if (!sendRequests.length) {
+      throw Error("Empty send requests");
+    }
+    const uniqueTickers = new Set(
+      sendRequests.map((request) => request.ticker)
+    );
+    if (uniqueTickers.size > 1) {
+      throw Error("Can not send different token types in one transaction");
+    }
+    const uniqueTockenIds = new Set(sendRequests.map((val) => val.tokenId));
+    if (uniqueTockenIds.size > 1) {
+      throw Error(
+        "You have two different token types with the same ticker. Pass tokenId parameter"
+      );
+    }
+
+    const ticker = sendRequests[0].ticker;
+    const tokenId = sendRequests[0].tokenId;
+
+    const slpUtxos = await this.provider.SlpSpendableUtxos(
+      this.cashaddr,
+      ticker,
+      tokenId
+    );
+    let slpOutputsResult = await SlpGetSendOutputs(slpUtxos, sendRequests);
+
+    let fundingBchUtxos = await this.wallet
+      .slpAware(true)
+      .getAddressUtxos(this.wallet.cashaddr!);
+    let slpToBchUtxos = slpOutputsResult.FundingSlpUtxos.map(
+      (val) => val as UtxoI
+    );
+    fundingBchUtxos = [...slpToBchUtxos, ...fundingBchUtxos];
+
+    const actualTokenId = slpUtxos[0].tokenId;
+    return [
+      actualTokenId,
+      await this.processSlpTransaction(fundingBchUtxos, slpOutputsResult),
+    ];
+  }
+
+  public async mint(
+    amount: BigNumber.Value,
+    ticker: string,
+    tokenId?: string,
+    endBaton: boolean = false
+  ): Promise<SlpMintResult> {
+    let [actualTokenId, result] = await this._processMint(
+      amount,
+      ticker,
+      tokenId,
+      endBaton
+    );
+    return {
+      txId: result,
+      balances: (await this.getBalance(
+        ticker,
+        actualTokenId
+      )) as SlpTokenBalance[],
+    };
+  }
+
+  private async _processMint(
+    amount: BigNumber.Value,
+    ticker: string,
+    tokenId?: string,
+    endBaton: boolean = false
   ) {
     amount = new BigNumber(amount);
     if (amount.isLessThanOrEqualTo(0)) {
-      throw Error('Mint amount should be greater than zero');
+      throw Error("Mint amount should be greater than zero");
     }
 
     const slpBatonUtxos = await this.getBatonUtxos(ticker, tokenId);
@@ -110,87 +248,45 @@ export class Slp {
     }
 
     if (slpBatonUtxos.length > 1) {
-      throw Error("More than 1 minting baton found. Refusing to continue. Pass the tokenId parameter to be specific");
+      throw Error(
+        "More than 1 minting baton found. Refusing to continue. Pass the tokenId parameter to be specific"
+      );
     }
 
     tokenId = slpBatonUtxos[0].tokenId;
 
-    let slpOutputsResult = await SlpGetMintOutputs(slpBatonUtxos, tokenId, amount, this.cashaddr, this.cashaddr, endBaton);
+    let slpOutputsResult = await SlpGetMintOutputs(
+      slpBatonUtxos,
+      tokenId,
+      amount,
+      this.cashaddr,
+      this.cashaddr,
+      endBaton
+    );
 
-    let bchUtxos = await this.wallet.slpAware(true).getAddressUtxos(this.wallet.cashaddr!);
+    let bchUtxos = await this.wallet
+      .slpAware(true)
+      .getAddressUtxos(this.wallet.cashaddr!);
     let fundingBchUtxos = bchUtxos;
-    let slpToBchUtxos = slpOutputsResult.FundingSlpUtxos.map(val => val as UtxoI);
+    let slpToBchUtxos = slpOutputsResult.FundingSlpUtxos.map(
+      (val) => val as UtxoI
+    );
     fundingBchUtxos = [...slpToBchUtxos, ...fundingBchUtxos];
 
-    return [tokenId, await this.processSlpTransaction(fundingBchUtxos, slpOutputsResult)];
+    return [
+      tokenId,
+      await this.processSlpTransaction(fundingBchUtxos, slpOutputsResult),
+    ];
   }
 
-  public async genesis(options: SlpGenesisOptions
-  ): Promise<SlpGenesisResult> {
-    let result = await this._processGenesis(options);
-    return {
-      tokenId: result,
-      balances: (await this.getBalance(undefined, result)) as SlpTokenBalance[]
-    };
-  }
-
-  private async _processGenesis(options: SlpGenesisOptions) {
-    let slpOutputsResult = await SlpGetGenesisOutputs(options, this.cashaddr, this.cashaddr);
-
-    let bchUtxos = await this.wallet.slpAware(false).getAddressUtxos(this.wallet.cashaddr!);
-    let slpToBchUtxos = slpOutputsResult.FundingSlpUtxos.map(val => val as UtxoI);
-    let fundingBchUtxos = bchUtxos;
-    fundingBchUtxos = [...slpToBchUtxos, ...fundingBchUtxos];
-
-    return await this.processSlpTransaction(fundingBchUtxos, slpOutputsResult);
-  }
-
-  public async send(
-    requests: SlpSendRequest[]
-  ): Promise<SlpSendResult> {
-    let [actualTokenId, result] = await this._processSendRequests(requests);
-    return {
-      txId: result!,
-      balances: (await this.getBalance(undefined, actualTokenId)) as SlpTokenBalance[]
-    };
-  }
-
-  /**
-   * _processSendRequests given a list of sendRequests, estimate fees, build the transaction and submit it.
-   * @param  {SendRequest[]} sendRequests
-   * @param  {} discardChange=false
-   */
-  private async _processSendRequests(
-    sendRequests: SlpSendRequest[]
-  ) {
-    if (!sendRequests.length) {
-      throw Error("Empty send requests");
+  private async processSlpTransaction(
+    fundingBchUtxos: UtxoI[],
+    slpOutputsResult: {
+      SlpOutputs: { lockingBytecode: Uint8Array; satoshis: Uint8Array }[];
+      FundingSlpUtxos: SlpUtxoI[];
+      BchSendRequests: SendRequest[];
     }
-    const uniqueTickers = new Set(sendRequests.map(request => request.ticker));
-    if (uniqueTickers.size > 1) {
-      throw Error("Can not send different token types in one transaction");
-    }
-    const uniqueTockenIds = new Set(sendRequests.map(val => val.tokenId));
-    if (uniqueTockenIds.size > 1) {
-      throw Error("You have two different token types with the same ticker. Pass tokenId parameter");
-    }
-
-    const ticker = sendRequests[0].ticker;
-    const tokenId = sendRequests[0].tokenId;
-
-    const slpUtxos = await this.provider.SlpSpendableUtxos(this.cashaddr, ticker, tokenId);
-    let slpOutputsResult = await SlpGetSendOutputs(slpUtxos, sendRequests);
-
-    let bchUtxos = await this.wallet.provider!.getUtxos(this.wallet.cashaddr!);
-    let fundingBchUtxos = bchUtxos.filter(bchutxo => slpUtxos.findIndex(slputxo => bchutxo.txid === slputxo.txid && bchutxo.vout === slputxo.vout) === -1);
-    let slpToBchUtxos = slpOutputsResult.FundingSlpUtxos.map(val => val as UtxoI);
-    fundingBchUtxos = [...slpToBchUtxos, ...fundingBchUtxos];
-
-    const actualTokenId = slpUtxos[0].tokenId;
-    return [actualTokenId, await this.processSlpTransaction(fundingBchUtxos, slpOutputsResult)];
-  }
-
-  private async processSlpTransaction(fundingBchUtxos: UtxoI[], slpOutputsResult: { SlpOutputs: { lockingBytecode: Uint8Array; satoshis: Uint8Array; }[]; FundingSlpUtxos: SlpUtxoI[]; BchSendRequests: SendRequest[]; }): Promise<string> {
+  ): Promise<string> {
     if (!this.wallet.privateKey) {
       throw new Error(
         `Wallet ${this.wallet.name} is missing either a network or private key`
@@ -203,17 +299,21 @@ export class Slp {
 
     const bestHeight = await this.wallet.provider!.getBlockHeight()!;
 
-    const relayFeePerByteInSatoshi = await getRelayFeeCache(this.wallet.provider!);
+    const relayFeePerByteInSatoshi = await getRelayFeeCache(
+      this.wallet.provider!
+    );
 
     const feeEstimate = await getFeeAmount({
       utxos: fundingBchUtxos,
       sendRequests: slpOutputsResult.BchSendRequests,
       privateKey: this.wallet.privateKey,
       relayFeePerByteInSatoshi: relayFeePerByteInSatoshi,
-      slpOutputs: slpOutputsResult.SlpOutputs
+      slpOutputs: slpOutputsResult.SlpOutputs,
     });
 
-    const bchSpendAmount = slpOutputsResult.BchSendRequests.map(val => val.value).reduce((a, b) => a + b, 0);
+    const bchSpendAmount = slpOutputsResult.BchSendRequests.map(
+      (val) => val.value
+    ).reduce((a, b) => a + b, 0);
 
     let fundingUtxos = await getSuitableUtxos(
       fundingBchUtxos,
@@ -232,7 +332,7 @@ export class Slp {
       sendRequests: slpOutputsResult.BchSendRequests,
       privateKey: this.wallet.privateKey,
       relayFeePerByteInSatoshi: relayFeePerByteInSatoshi,
-      slpOutputs: slpOutputsResult.SlpOutputs
+      slpOutputs: slpOutputsResult.SlpOutputs,
     });
 
     const encodedTransaction = await buildEncodedTransaction(

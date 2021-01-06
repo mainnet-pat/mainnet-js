@@ -1,6 +1,6 @@
-import BigNumber from 'bignumber.js';
-import { UtxoI } from '../interface';
-import { BalanceResponse } from '../util/balanceObjectFromSatoshi';
+import BigNumber from "bignumber.js";
+import { UtxoI } from "../interface";
+import { BalanceResponse } from "../util/balanceObjectFromSatoshi";
 
 export type SlpDbResponse = {
   t: any[];
@@ -13,11 +13,11 @@ export type SlpDbResponse = {
 };
 
 export type SlpTokenBalance = {
-  amount: BigNumber,
-  ticker: string,
-  name: string,
-  tokenId: string
-}
+  amount: BigNumber;
+  ticker: string;
+  name: string;
+  tokenId: string;
+};
 
 export interface SlpUtxoI extends UtxoI {
   amount: BigNumber;
@@ -27,12 +27,12 @@ export interface SlpUtxoI extends UtxoI {
 }
 
 export type SlpSendRequest = {
-  cashaddr: string,
-  value: BigNumber.Value,
-  ticker: string,
-  tokenId?: string,
+  cashaddr: string;
+  value: BigNumber.Value;
+  ticker: string;
+  tokenId?: string;
   // burnAmount: number | undefined;
-}
+};
 
 export interface SlpGenesisOptions {
   name: string;

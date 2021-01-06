@@ -187,13 +187,13 @@ export async function getFeeAmount({
   sendRequests,
   privateKey,
   relayFeePerByteInSatoshi,
-  slpOutputs
+  slpOutputs,
 }: {
   utxos: UtxoI[];
   sendRequests: SendRequest[];
   privateKey: Uint8Array;
   relayFeePerByteInSatoshi: number;
-  slpOutputs: any[]
+  slpOutputs: any[];
 }) {
   // build transaction
   if (utxos) {
@@ -204,7 +204,7 @@ export async function getFeeAmount({
       privateKey,
       1000,
       false,
-      slpOutputs,
+      slpOutputs
     );
 
     return draftTransaction.length * relayFeePerByteInSatoshi + 1;
@@ -222,7 +222,7 @@ export async function buildEncodedTransaction(
   privateKey: Uint8Array,
   fee: number = 0,
   discardChange = false,
-  slpOutputs: any[] = [],
+  slpOutputs: any[] = []
 ) {
   let txn = await buildP2pkhNonHdTransaction(
     fundingUtxos,

@@ -94,7 +94,7 @@ export class Wallet extends BaseWallet {
     return this._slp;
   }
 
-  public slpAware(value:boolean = true): Wallet {
+  public slpAware(value: boolean = true): Wallet {
     this._slpAware = value;
     return this;
   }
@@ -152,7 +152,10 @@ export class Wallet extends BaseWallet {
     const secp256k1 = await secp256k1Promise;
     this.publicKey = secp256k1.derivePublicKeyUncompressed(this.privateKey!);
     this.publicKeyHash = secp256k1.derivePublicKeyCompressed(this.privateKey!);
-    const networkType = this.networkType === NetworkType.Regtest ? NetworkType.Testnet : this.networkType;
+    const networkType =
+      this.networkType === NetworkType.Regtest
+        ? NetworkType.Testnet
+        : this.networkType;
     this.privateKeyWif = encodePrivateKeyWif(
       sha256,
       this.privateKey!,
@@ -212,7 +215,10 @@ export class Wallet extends BaseWallet {
       );
     }
     this.publicKey = secp256k1.derivePublicKeyCompressed(this.privateKey);
-    const networkType = this.networkType === NetworkType.Regtest ? NetworkType.Testnet : this.networkType;
+    const networkType =
+      this.networkType === NetworkType.Regtest
+        ? NetworkType.Testnet
+        : this.networkType;
     this.privateKeyWif = encodePrivateKeyWif(
       sha256,
       this.privateKey,
@@ -374,8 +380,17 @@ export class Wallet extends BaseWallet {
     }
 
     if (this._slpAware) {
-      const [bchUtxos, slpUtxos] = await Promise.all([this.provider!.getUtxos(address), this.slp.getSlpUtxos(address)]);
-      return bchUtxos.filter(bchutxo => slpUtxos.findIndex(slputxo => bchutxo.txid === slputxo.txid && bchutxo.vout === slputxo.vout) === -1);
+      const [bchUtxos, slpUtxos] = await Promise.all([
+        this.provider!.getUtxos(address),
+        this.slp.getSlpUtxos(address),
+      ]);
+      return bchUtxos.filter(
+        (bchutxo) =>
+          slpUtxos.findIndex(
+            (slputxo) =>
+              bchutxo.txid === slputxo.txid && bchutxo.vout === slputxo.vout
+          ) === -1
+      );
     } else {
       return await this.provider!.getUtxos(address);
     }
@@ -582,7 +597,7 @@ export class Wallet extends BaseWallet {
       sendRequests: sendRequests,
       privateKey: this.privateKey,
       relayFeePerByteInSatoshi: relayFeePerByteInSatoshi,
-      slpOutputs: []
+      slpOutputs: [],
     });
     const spendableAmount = await sumUtxoValue(fundingUtxos);
 
@@ -648,7 +663,7 @@ export class Wallet extends BaseWallet {
       sendRequests: sendRequests,
       privateKey: this.privateKey,
       relayFeePerByteInSatoshi: relayFeePerByteInSatoshi,
-      slpOutputs: []
+      slpOutputs: [],
     });
 
     const fundingUtxos = await getSuitableUtxos(
@@ -666,7 +681,7 @@ export class Wallet extends BaseWallet {
       sendRequests: sendRequests,
       privateKey: this.privateKey,
       relayFeePerByteInSatoshi: relayFeePerByteInSatoshi,
-      slpOutputs: []
+      slpOutputs: [],
     });
     const encodedTransaction = await buildEncodedTransaction(
       fundingUtxos,

@@ -1,9 +1,11 @@
-import {
-  binToHex
-} from "@bitauth/libauth";
+import { binToHex } from "@bitauth/libauth";
 import { parseSLP } from "slp-parser";
 import { DUST_UTXO_THRESHOLD } from "../constant";
-import { SlpGetGenesisOutputs, SlpGetMintOutputs, SlpGetSendOutputs } from "../slp/SlpLibAuth";
+import {
+  SlpGetGenesisOutputs,
+  SlpGetMintOutputs,
+  SlpGetSendOutputs,
+} from "../slp/SlpLibAuth";
 import { SlpGenesisOptions, SlpSendRequest } from "../Slp/interface";
 import { RegTestWallet } from "../wallet/Wif";
 import { SlpUtxoI } from "./interface";
@@ -17,11 +19,17 @@ test("Test SLP genesis txo bytecode per SLP Spec", async () => {
     ticker: "USDT",
     decimalPlaces: 8,
     initialAmount: 100000000,
-    documentUrl: "https://tether.to/wp-content/uploads/2016/06/TetherWhitePaper.pdf",
-    documentHash: "db4451f11eda33950670aaf59e704da90117ff7057283b032cfaec7779313916"
-  }
+    documentUrl:
+      "https://tether.to/wp-content/uploads/2016/06/TetherWhitePaper.pdf",
+    documentHash:
+      "db4451f11eda33950670aaf59e704da90117ff7057283b032cfaec7779313916",
+  };
 
-  const result = await SlpGetGenesisOutputs(genesisOptions, wallet.cashaddr!, wallet.cashaddr!);
+  const result = await SlpGetGenesisOutputs(
+    genesisOptions,
+    wallet.cashaddr!,
+    wallet.cashaddr!
+  );
   const genesisTxoBytecode = result.SlpOutputs[0].lockingBytecode;
 
   const hex = binToHex(genesisTxoBytecode);
@@ -34,10 +42,23 @@ test("Test SLP genesis txo bytecode per SLP Spec", async () => {
 
 test("Test SLP send txo bytecode per SLP Spec", async () => {
   const wallet = await RegTestWallet.newRandom();
-  const fundingSlpUtxo: SlpUtxoI = { amount: new BigNumber(100000000), decimals: 8, txid: "", vout: 1, satoshis: DUST_UTXO_THRESHOLD, ticker: "USDT", tokenId: "550d19eb820e616a54b8a73372c4420b5a0567d8dc00f613b71c5234dc884b35"};
-  const sendRequest: SlpSendRequest = {cashaddr: wallet.cashaddr!, value: 1000000, ticker: "USDT", tokenId: "550d19eb820e616a54b8a73372c4420b5a0567d8dc00f613b71c5234dc884b35" };
+  const fundingSlpUtxo: SlpUtxoI = {
+    amount: new BigNumber(100000000),
+    decimals: 8,
+    txid: "",
+    vout: 1,
+    satoshis: DUST_UTXO_THRESHOLD,
+    ticker: "USDT",
+    tokenId: "550d19eb820e616a54b8a73372c4420b5a0567d8dc00f613b71c5234dc884b35",
+  };
+  const sendRequest: SlpSendRequest = {
+    cashaddr: wallet.cashaddr!,
+    value: 1000000,
+    ticker: "USDT",
+    tokenId: "550d19eb820e616a54b8a73372c4420b5a0567d8dc00f613b71c5234dc884b35",
+  };
 
-  const result = await SlpGetSendOutputs([fundingSlpUtxo], [sendRequest])
+  const result = await SlpGetSendOutputs([fundingSlpUtxo], [sendRequest]);
   const sendTxoBytecode = result.SlpOutputs[0].lockingBytecode;
 
   const hex = binToHex(sendTxoBytecode);
@@ -50,9 +71,24 @@ test("Test SLP send txo bytecode per SLP Spec", async () => {
 
 test("Test SLP mint txo bytecode per SLP Spec", async () => {
   const wallet = await RegTestWallet.newRandom();
-  const batonSlpUtxo: SlpUtxoI = { amount: new BigNumber(100000000), decimals: 8, txid: "", vout: 1, satoshis: DUST_UTXO_THRESHOLD, ticker: "USDT", tokenId: "550d19eb820e616a54b8a73372c4420b5a0567d8dc00f613b71c5234dc884b35"};
+  const batonSlpUtxo: SlpUtxoI = {
+    amount: new BigNumber(100000000),
+    decimals: 8,
+    txid: "",
+    vout: 1,
+    satoshis: DUST_UTXO_THRESHOLD,
+    ticker: "USDT",
+    tokenId: "550d19eb820e616a54b8a73372c4420b5a0567d8dc00f613b71c5234dc884b35",
+  };
 
-  const result = await SlpGetMintOutputs([batonSlpUtxo], "550d19eb820e616a54b8a73372c4420b5a0567d8dc00f613b71c5234dc884b35", 100000000, wallet.cashaddr!, wallet.cashaddr!, false);
+  const result = await SlpGetMintOutputs(
+    [batonSlpUtxo],
+    "550d19eb820e616a54b8a73372c4420b5a0567d8dc00f613b71c5234dc884b35",
+    100000000,
+    wallet.cashaddr!,
+    wallet.cashaddr!,
+    false
+  );
   const mintTxoBytecode = result.SlpOutputs[0].lockingBytecode;
 
   const hex = binToHex(mintTxoBytecode);

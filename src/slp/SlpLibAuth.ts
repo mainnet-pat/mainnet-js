@@ -10,8 +10,8 @@ import bchaddr from "bchaddrjs-slp";
 import { SendRequest } from "../wallet/model";
 import { SlpUtxoI } from "./interface";
 
-import BigNumber from 'bignumber.js'
-import { SlpGenesisOptions, SlpSendRequest } from "../Slp/interface";;
+import BigNumber from "bignumber.js";
+import { SlpGenesisOptions, SlpSendRequest } from "../Slp/interface";
 import { DUST_UTXO_THRESHOLD } from "../constant";
 import { UnitEnum } from "../enum";
 
@@ -25,18 +25,31 @@ export const bigIntToBinUint64BE = (value) => {
   return bin;
 };
 
-export const SlpGetGenesisOutputs = async (options: SlpGenesisOptions, genesis_token_receiver_cashaddr: string, mint_baton_receiver_cashaddr) => {
+export const SlpGetGenesisOutputs = async (
+  options: SlpGenesisOptions,
+  genesis_token_receiver_cashaddr: string,
+  mint_baton_receiver_cashaddr
+) => {
   // explicitly convert initial amount to bignumber
   options.initialAmount = new BigNumber(options.initialAmount);
   if (options.initialAmount.isLessThanOrEqualTo(0)) {
-    throw Error('Initial genesis token amount should be greater than zero');
+    throw Error("Initial genesis token amount should be greater than zero");
   }
 
   if (options.decimalPlaces < 0 || options.decimalPlaces > 9) {
-    throw new Error("Genesis allows decimal places between 0")
+    throw new Error("Genesis allows decimal places between 0");
   }
-  const cashAddrs = options.endBaton ? [genesis_token_receiver_cashaddr] : [genesis_token_receiver_cashaddr, mint_baton_receiver_cashaddr];
-  const bchSendRequests = cashAddrs.map(val => new SendRequest({ cashaddr: bchaddr.toCashAddress(val), value: DUST_UTXO_THRESHOLD, unit: UnitEnum.SAT }))
+  const cashAddrs = options.endBaton
+    ? [genesis_token_receiver_cashaddr]
+    : [genesis_token_receiver_cashaddr, mint_baton_receiver_cashaddr];
+  const bchSendRequests = cashAddrs.map(
+    (val) =>
+      new SendRequest({
+        cashaddr: bchaddr.toCashAddress(val),
+        value: DUST_UTXO_THRESHOLD,
+        unit: UnitEnum.SAT,
+      })
+  );
 
   const template = validateAuthenticationTemplate(SlpTxoTemplate);
   if (typeof template === "string") {
@@ -44,7 +57,9 @@ export const SlpGetGenesisOutputs = async (options: SlpGenesisOptions, genesis_t
   }
   const compiler = await authenticationTemplateToCompilerBCH(template);
 
-  const rawTokenAmount = BigInt(options.initialAmount.shiftedBy(options.decimalPlaces));
+  const rawTokenAmount = BigInt(
+    options.initialAmount.shiftedBy(options.decimalPlaces)
+  );
 
   const batonVout = options.endBaton ? 0x00 : 0x02;
 
@@ -56,13 +71,12 @@ export const SlpGetGenesisOutputs = async (options: SlpGenesisOptions, genesis_t
         options.documentUrl || "https://mainnet.cash"
       ),
       g_token_document_hash: hexToBin(
-        options.documentHash || "0000000000000000000000000000000000000000000000000000000000000000"
+        options.documentHash ||
+          "0000000000000000000000000000000000000000000000000000000000000000"
       ),
       g_decimals: Uint8Array.from([options.decimalPlaces]),
       g_mint_baton_vout: Uint8Array.from([batonVout]),
-      g_initial_token_mint_quantity: bigIntToBinUint64BE(
-        rawTokenAmount
-      )
+      g_initial_token_mint_quantity: bigIntToBinUint64BE(rawTokenAmount),
     },
   });
   if (!genesisTxoBytecode.success) {
@@ -70,18 +84,36 @@ export const SlpGetGenesisOutputs = async (options: SlpGenesisOptions, genesis_t
   }
 
   return {
-    SlpOutputs: [{
-      lockingBytecode: genesisTxoBytecode.bytecode,
-      satoshis: bigIntToBinUint64LE(BigInt(0)),
-    }],
+    SlpOutputs: [
+      {
+        lockingBytecode: genesisTxoBytecode.bytecode,
+        satoshis: bigIntToBinUint64LE(BigInt(0)),
+      },
+    ],
     FundingSlpUtxos: [],
-    BchSendRequests: bchSendRequests
+    BchSendRequests: bchSendRequests,
   };
-}
+};
 
-export const SlpGetMintOutputs = async (slpBatonUtxos: SlpUtxoI[], tokenId: string, amount: BigNumber.Value, mint_tokens_receiver_cashaddr: string, mint_baton_receiver_cashaddr: string, endBaton: boolean = false) => {
-  const cashAddrs = endBaton ? [mint_tokens_receiver_cashaddr] : [mint_tokens_receiver_cashaddr, mint_baton_receiver_cashaddr];
-  const bchSendRequests = cashAddrs.map(val => new SendRequest({ cashaddr: bchaddr.toCashAddress(val), value: DUST_UTXO_THRESHOLD, unit: UnitEnum.SAT }))
+export const SlpGetMintOutputs = async (
+  slpBatonUtxos: SlpUtxoI[],
+  tokenId: string,
+  amount: BigNumber.Value,
+  mint_tokens_receiver_cashaddr: string,
+  mint_baton_receiver_cashaddr: string,
+  endBaton: boolean = false
+) => {
+  const cashAddrs = endBaton
+    ? [mint_tokens_receiver_cashaddr]
+    : [mint_tokens_receiver_cashaddr, mint_baton_receiver_cashaddr];
+  const bchSendRequests = cashAddrs.map(
+    (val) =>
+      new SendRequest({
+        cashaddr: bchaddr.toCashAddress(val),
+        value: DUST_UTXO_THRESHOLD,
+        unit: UnitEnum.SAT,
+      })
+  );
 
   const template = validateAuthenticationTemplate(SlpTxoTemplate);
   if (typeof template === "string") {
@@ -95,13 +127,9 @@ export const SlpGetMintOutputs = async (slpBatonUtxos: SlpUtxoI[], tokenId: stri
 
   let mintTxoBytecode = compiler.generateBytecode("mint_lock", {
     bytecode: {
-      m_token_id: hexToBin(
-        tokenId
-      ),
+      m_token_id: hexToBin(tokenId),
       m_mint_baton_vout: Uint8Array.from([batonVout]),
-      m_additional_token_quantity: bigIntToBinUint64BE(
-        BigInt(amount)
-      )
+      m_additional_token_quantity: bigIntToBinUint64BE(BigInt(amount)),
     },
   });
   if (!mintTxoBytecode.success) {
@@ -109,28 +137,39 @@ export const SlpGetMintOutputs = async (slpBatonUtxos: SlpUtxoI[], tokenId: stri
   }
 
   return {
-    SlpOutputs: [{
-      lockingBytecode: mintTxoBytecode.bytecode,
-      satoshis: bigIntToBinUint64LE(BigInt(0)),
-    }],
+    SlpOutputs: [
+      {
+        lockingBytecode: mintTxoBytecode.bytecode,
+        satoshis: bigIntToBinUint64LE(BigInt(0)),
+      },
+    ],
     FundingSlpUtxos: slpBatonUtxos,
-    BchSendRequests: bchSendRequests
+    BchSendRequests: bchSendRequests,
   };
-}
+};
 
-export const SlpGetSendOutputs = async (slpUtxos: SlpUtxoI[], sendRequests: SlpSendRequest[]) => {
+export const SlpGetSendOutputs = async (
+  slpUtxos: SlpUtxoI[],
+  sendRequests: SlpSendRequest[]
+) => {
   if (!slpUtxos.length) {
     throw new Error("No available tokens to spend");
   }
 
   // check this once again with fetched tokenId data
-  const uniqueTockenIds = new Set(slpUtxos.map(val => val.tokenId));
+  const uniqueTockenIds = new Set(slpUtxos.map((val) => val.tokenId));
   if (uniqueTockenIds.size > 1) {
-    throw Error("You have two different token types with the same ticker. Pass tokenId parameter");
+    throw Error(
+      "You have two different token types with the same ticker. Pass tokenId parameter"
+    );
   }
 
-  const slpAvailableAmount: BigNumber = slpUtxos.map(val => new BigNumber(val.amount)).reduce((a, b) => BigNumber.sum(a, b), new BigNumber(0));
-  const slpSpendAmount: BigNumber = sendRequests.map(val => new BigNumber(val.value)).reduce((a, b) => BigNumber.sum(a, b), new BigNumber(0));
+  const slpAvailableAmount: BigNumber = slpUtxos
+    .map((val) => new BigNumber(val.amount))
+    .reduce((a, b) => BigNumber.sum(a, b), new BigNumber(0));
+  const slpSpendAmount: BigNumber = sendRequests
+    .map((val) => new BigNumber(val.value))
+    .reduce((a, b) => BigNumber.sum(a, b), new BigNumber(0));
 
   if (slpSpendAmount.isLessThanOrEqualTo(0)) {
     throw new Error("Refusing to spend 0 tokens");
@@ -145,14 +184,21 @@ export const SlpGetSendOutputs = async (slpUtxos: SlpUtxoI[], sendRequests: SlpS
   for (let slputxo of slpUtxos) {
     const amountTooLow = inputTokensRaw.isLessThan(slpSpendAmount);
     if (amountTooLow) {
-        inputTokensRaw = inputTokensRaw.plus(slputxo.amount)
-        fundingSlpUtxos.push(slputxo);
+      inputTokensRaw = inputTokensRaw.plus(slputxo.amount);
+      fundingSlpUtxos.push(slputxo);
     } else {
-        break;
+      break;
     }
   }
 
-  const bchSendRequests = sendRequests.map(val => new SendRequest({ cashaddr: bchaddr.toCashAddress(val.cashaddr), value: DUST_UTXO_THRESHOLD, unit: UnitEnum.SAT }))
+  const bchSendRequests = sendRequests.map(
+    (val) =>
+      new SendRequest({
+        cashaddr: bchaddr.toCashAddress(val.cashaddr),
+        value: DUST_UTXO_THRESHOLD,
+        unit: UnitEnum.SAT,
+      })
+  );
 
   const template = validateAuthenticationTemplate(SlpTxoTemplate);
   if (typeof template === "string") {
@@ -161,27 +207,29 @@ export const SlpGetSendOutputs = async (slpUtxos: SlpUtxoI[], sendRequests: SlpS
   const compiler = await authenticationTemplateToCompilerBCH(template);
 
   const change = slpAvailableAmount.minus(slpSpendAmount);
-  let amounts = sendRequests.map(val => new BigNumber(val.value));
+  let amounts = sendRequests.map((val) => new BigNumber(val.value));
   if (change.isGreaterThan(new BigNumber(0))) {
     amounts.push(change);
   }
 
   const decimals = slpUtxos[0].decimals;
-  amounts = amounts.map(val => val.shiftedBy(decimals));
+  amounts = amounts.map((val) => val.shiftedBy(decimals));
 
   let result: Uint8Array = new Uint8Array();
   for (const amnt of amounts) {
-    result = new Uint8Array([ ...result, ...Uint8Array.from([8]), ...bigIntToBinUint64BE(BigInt(amnt))]);
+    result = new Uint8Array([
+      ...result,
+      ...Uint8Array.from([8]),
+      ...bigIntToBinUint64BE(BigInt(amnt)),
+    ]);
   }
 
   const tokenId = slpUtxos[0].tokenId;
 
   let sendTxoBytecode = compiler.generateBytecode("send_lock", {
     bytecode: {
-      s_token_id: hexToBin(
-        tokenId!
-      ),
-      s_token_output_quantities: result
+      s_token_id: hexToBin(tokenId!),
+      s_token_output_quantities: result,
     },
   });
   if (!sendTxoBytecode.success) {
@@ -189,14 +237,16 @@ export const SlpGetSendOutputs = async (slpUtxos: SlpUtxoI[], sendRequests: SlpS
   }
 
   return {
-    SlpOutputs: [{
-      lockingBytecode: sendTxoBytecode.bytecode,
-      satoshis: bigIntToBinUint64LE(BigInt(0)),
-    }],
+    SlpOutputs: [
+      {
+        lockingBytecode: sendTxoBytecode.bytecode,
+        satoshis: bigIntToBinUint64LE(BigInt(0)),
+      },
+    ],
     FundingSlpUtxos: fundingSlpUtxos,
-    BchSendRequests: bchSendRequests
+    BchSendRequests: bchSendRequests,
   };
-}
+};
 
 // prettier-ignore
 export const SlpTxoTemplate = {
