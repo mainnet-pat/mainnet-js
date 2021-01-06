@@ -152,7 +152,7 @@ export class Wallet extends BaseWallet {
     const secp256k1 = await secp256k1Promise;
     this.publicKey = secp256k1.derivePublicKeyUncompressed(this.privateKey!);
     this.publicKeyHash = secp256k1.derivePublicKeyCompressed(this.privateKey!);
-    const networkType = this.networkType === NetworkType.Regtest ? NetworkType.Mainnet : this.networkType;
+    const networkType = this.networkType === NetworkType.Regtest ? NetworkType.Testnet : this.networkType;
     this.privateKeyWif = encodePrivateKeyWif(
       sha256,
       this.privateKey!,
@@ -212,7 +212,7 @@ export class Wallet extends BaseWallet {
       );
     }
     this.publicKey = secp256k1.derivePublicKeyCompressed(this.privateKey);
-    const networkType = this.networkType === NetworkType.Regtest ? NetworkType.Mainnet : this.networkType;
+    const networkType = this.networkType === NetworkType.Regtest ? NetworkType.Testnet : this.networkType;
     this.privateKeyWif = encodePrivateKeyWif(
       sha256,
       this.privateKey,
