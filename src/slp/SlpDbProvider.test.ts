@@ -1,8 +1,5 @@
 import { Network } from "..";
-import {
-  disconnectProviders,
-  initProviders,
-} from "../network";
+import { disconnectProviders, initProviders } from "../network";
 import { SlpDbProvider } from "./SlpDbProvider";
 import axios from "axios";
 
