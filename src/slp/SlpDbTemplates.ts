@@ -1,4 +1,5 @@
 // Slp Utxos for bch operation, to prevent accident burning of tokens and baton
+// prettier-ignore
 export const SlpAllUtxosTemplate = (cashaddr: string) => ({
     "v": 3,
     "q": {
@@ -41,6 +42,7 @@ export const SlpAllUtxosTemplate = (cashaddr: string) => ({
 });
 
 // Slp Utxos for spending
+// prettier-ignore
 export const SlpSpendableUtxosTemplate = (cashaddr: string, ticker?: string, tokenId?: string) => {
   let q = {
     "v": 3,
@@ -94,6 +96,7 @@ export const SlpSpendableUtxosTemplate = (cashaddr: string, ticker?: string, tok
   return q;
 }
 
+// prettier-ignore
 export const SlpAddressTokenBalancesTemplate = (cashaddr: string, ticker?: string, tokenId?: string) => {
   let q = {
     "v": 3,
@@ -164,6 +167,7 @@ export const SlpAddressTokenBalancesTemplate = (cashaddr: string, ticker?: strin
   return q;
 }
 
+// prettier-ignore
 export const SlpAddressTransactionHistoryTemplate = (address: string, ticker?: string, tokenId?: string) => {
   const q = {
     "v": 3,
@@ -200,6 +204,7 @@ export const SlpAddressTransactionHistoryTemplate = (address: string, ticker?: s
   return q;
 };
 
+// prettier-ignore
 export const SlpWaitForTransactionTemplate = (cashaddr: string, ticker?: string, tokenId?: string) => {
   let q = {
     "v": 3,
@@ -229,6 +234,7 @@ export const SlpWaitForTransactionTemplate = (cashaddr: string, ticker?: string,
   return q;
 };
 
+// prettier-ignore
 export const SlpAllTokensTemplate = () => ({
   "v": 3,
   "q": {
@@ -245,6 +251,7 @@ export const SlpAllTokensTemplate = () => ({
 })
 
 // Slp Utxos for bch operation, to prevent accident burning of tokens and baton
+// prettier-ignore
 export const SlpBatonUtxosTemplate = (cashaddr: string, ticker?: string, tokenId?: string) => {
   let q = {
     "v": 3,

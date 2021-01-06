@@ -8,7 +8,7 @@ import {
 
 import { mine } from "../mine";
 
-import { SlpGenesisOptions, SlpGenesisResult } from "./Slp";
+import { SlpGenesisOptions, SlpGenesisResult } from "../Slp/interface";;
 import { DUST_UTXO_THRESHOLD } from "../constant";
 
 describe("Slp wallet tests", () => {

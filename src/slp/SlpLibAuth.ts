@@ -1,7 +1,6 @@
 import {
   authenticationTemplateToCompilerBCH,
   bigIntToBinUint64LE,
-  binToHex,
   hexToBin,
   utf8ToBin,
   validateAuthenticationTemplate,
@@ -12,7 +11,7 @@ import { SendRequest } from "../wallet/model";
 import { SlpUtxoI } from "./interface";
 
 import BigNumber from 'bignumber.js'
-import { SlpGenesisOptions, SlpSendRequest } from "../wallet/Slp";
+import { SlpGenesisOptions, SlpSendRequest } from "../Slp/interface";;
 import { DUST_UTXO_THRESHOLD } from "../constant";
 import { UnitEnum } from "../enum";
 
@@ -199,7 +198,7 @@ export const SlpGetSendOutputs = async (slpUtxos: SlpUtxoI[], sendRequests: SlpS
   };
 }
 
-
+// prettier-ignore
 export const SlpTxoTemplate = {
   "$schema": "https://bitauth.com/schemas/authentication-template-v0.schema.json",
   "description": "SLP Token transaction output templates",

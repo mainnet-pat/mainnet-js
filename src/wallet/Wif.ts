@@ -16,7 +16,7 @@ import {
 } from "@bitauth/libauth";
 
 import { mnemonicToSeedSync, generateMnemonic } from "bip39";
-import { UnitEnum } from "../enum";
+import { NetworkType, UnitEnum } from "../enum";
 
 import { TxI } from "../interface";
 
@@ -152,10 +152,11 @@ export class Wallet extends BaseWallet {
     const secp256k1 = await secp256k1Promise;
     this.publicKey = secp256k1.derivePublicKeyUncompressed(this.privateKey!);
     this.publicKeyHash = secp256k1.derivePublicKeyCompressed(this.privateKey!);
+    const networkType = this.networkType === NetworkType.Regtest ? NetworkType.Mainnet : this.networkType;
     this.privateKeyWif = encodePrivateKeyWif(
       sha256,
       this.privateKey!,
-      this.networkType
+      networkType
     );
     checkWifNetwork(this.privateKeyWif, this.networkType);
 
@@ -211,10 +212,11 @@ export class Wallet extends BaseWallet {
       );
     }
     this.publicKey = secp256k1.derivePublicKeyCompressed(this.privateKey);
+    const networkType = this.networkType === NetworkType.Regtest ? NetworkType.Mainnet : this.networkType;
     this.privateKeyWif = encodePrivateKeyWif(
       sha256,
       this.privateKey,
-      this.networkType
+      networkType
     );
     checkWifNetwork(this.privateKeyWif, this.networkType);
     this.walletType = WalletTypeEnum.Wif;

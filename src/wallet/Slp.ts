@@ -1,6 +1,6 @@
 import { Wallet } from "./wif"
 import bchaddr from "bchaddrjs-slp";
-import { SlpTokenBalance, SlpUtxoI } from "../slp/interface";
+import { SlpGenesisOptions, SlpGenesisResult, SlpMintResult, SlpSendRequest, SlpSendResult, SlpTokenBalance, SlpUtxoI } from "../slp/interface";
 import { SlpDbProvider } from "../slp/SlpDbProvider";
 import { ImageI } from "../qr/interface";
 import { qrAddress } from "../qr/Qr";
@@ -251,37 +251,4 @@ export class Slp {
     let rawTransaction = binToHex(transaction);
     return await this.wallet.provider!.sendRawTransaction(rawTransaction);
   }
-}
-
-export type SlpSendRequest = {
-  cashaddr: string,
-  value: BigNumber.Value,
-  ticker: string,
-  tokenId?: string,
-  // burnAmount: number | undefined;
-}
-
-export interface SlpGenesisOptions {
-  name: string;
-  ticker: string;
-  initialAmount: BigNumber.Value;
-  decimalPlaces: number;
-  documentUrl?: string;
-  documentHash?: string;
-  endBaton?: boolean;
-}
-
-export interface SlpGenesisResult {
-  tokenId: string;
-  balances: SlpTokenBalance[];
-}
-
-export interface SlpSendResult {
-  txId: string;
-  balances: SlpTokenBalance[];
-}
-
-export interface SlpMintResult {
-  txId: string;
-  balances: SlpTokenBalance[];
 }
