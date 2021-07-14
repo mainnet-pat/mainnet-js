@@ -10,7 +10,7 @@ import { Network } from "../interface";
 import { delay } from "../util/delay";
 import { BlockHeader, ElectrumRawTransaction, ElectrumUtxo } from "./interface";
 
-import { Mutex } from 'async-mutex';
+import { Mutex } from "async-mutex";
 import { resolve } from "path/posix";
 
 export default class ElectrumNetworkProvider implements NetworkProvider {
@@ -118,7 +118,7 @@ export default class ElectrumNetworkProvider implements NetworkProvider {
     )) as unknown as ElectrumRawTransaction;
   }
 
-  async sendRawTransaction(txHex: string): Promise<string>{
+  async sendRawTransaction(txHex: string): Promise<string> {
     let result = (await this.performRequest(
       "blockchain.transaction.broadcast",
       txHex
@@ -129,7 +129,10 @@ export default class ElectrumNetworkProvider implements NetworkProvider {
     return result;
   }
 
-  async sendRawTransactionFast(txHex: string, cashaddr: string): Promise<string> {
+  async sendRawTransactionFast(
+    txHex: string,
+    cashaddr: string
+  ): Promise<string> {
     return new Promise(async (resolve) => {
       let txHash;
 
@@ -140,23 +143,18 @@ export default class ElectrumNetworkProvider implements NetworkProvider {
             return;
           }
 
-          this.unsubscribeFromAddress(
-            cashaddr,
-            waitForTransactionCallback
-          );
+          this.unsubscribeFromAddress(cashaddr, waitForTransactionCallback);
 
           resolve(txHash);
         }
       };
-      this.subscribeToAddress(
-        cashaddr,
-        waitForTransactionCallback
-      );
+      this.subscribeToAddress(cashaddr, waitForTransactionCallback);
 
-      this.performRequest(
-        "blockchain.transaction.broadcast",
-        txHex
-      ).then(result => { txHash = result as string });
+      this.performRequest("blockchain.transaction.broadcast", txHex).then(
+        (result) => {
+          txHash = result as string;
+        }
+      );
     });
   }
 
@@ -253,9 +251,10 @@ export default class ElectrumNetworkProvider implements NetworkProvider {
     await this.ready();
 
     const result = await this.electrum.subscribe(
-        callback,
-        methodName,
-        ...parameters);
+      callback,
+      methodName,
+      ...parameters
+    );
 
     this.subscriptions++;
 
@@ -270,9 +269,10 @@ export default class ElectrumNetworkProvider implements NetworkProvider {
     await this.ready();
 
     const result = this.electrum.unsubscribe(
-        callback,
-        methodName,
-        ...parameters);
+      callback,
+      methodName,
+      ...parameters
+    );
 
     this.subscriptions--;
 
@@ -280,7 +280,7 @@ export default class ElectrumNetworkProvider implements NetworkProvider {
   }
 
   async ready(): Promise<boolean | unknown> {
-    return await this.connect() as void[];
+    return (await this.connect()) as void[];
   }
 
   async connect(): Promise<void[]> {
