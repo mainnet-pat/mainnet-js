@@ -4,10 +4,10 @@ import { RegTestWallet } from "../../wallet/Wif";
 import { initProviders, disconnectProviders } from "../../network/Connection";
 
 beforeAll(async () => {
-  await initProviders();
+  // await initProviders();
 });
 afterAll(async () => {
-  await disconnectProviders();
+  // await disconnectProviders();
 });
 
 describe(`Test Escrow Contracts`, () => {

@@ -2,11 +2,11 @@ import { getNetworkProvider } from "./default";
 import { initProviders, disconnectProviders } from "./Connection";
 
 beforeAll(async () => {
-  await initProviders();
+  // await initProviders();
 });
 
 afterAll(async () => {
-  await disconnectProviders();
+  // await disconnectProviders();
 });
 
 test("Should connect to the default cluster", async () => {

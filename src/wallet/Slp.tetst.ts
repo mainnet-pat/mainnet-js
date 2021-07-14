@@ -17,11 +17,11 @@ import { WalletTypeEnum } from "./enum";
 
 describe("Slp wallet tests", () => {
   beforeAll(async () => {
-    await initProviders([Network.MAINNET, Network.REGTEST]);
+    // await initProviders([Network.MAINNET, Network.REGTEST]);
   });
 
   afterAll(async () => {
-    await disconnectProviders([Network.MAINNET, Network.REGTEST]);
+    // await disconnectProviders([Network.MAINNET, Network.REGTEST]);
   });
 
   let ticker: string = Math.random().toString(36).substring(8).toUpperCase();

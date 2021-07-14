@@ -7,11 +7,11 @@ import { mine } from "../mine";
 const aliceWif = `wif:regtest:${process.env.PRIVATE_WIF!}`;
 
 beforeAll(async () => {
-  await initProviders();
+  // await initProviders();
 });
 
 afterAll(async () => {
-  await disconnectProviders();
+  // await disconnectProviders();
 });
 
 test("subcribe to address", async () => {
