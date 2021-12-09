@@ -1,6 +1,6 @@
 import { ethers } from "ethers";
-import { UnitEnum } from "mainnet-js";
-import { CancelWatchFn, SendRequest, SendRequestArray } from "./interface";
+import { BigNumber, UnitEnum, ExchangeRate, Mainnet } from "mainnet-js";
+import { CancelWatchFn, SendRequest, SendRequestArray, BalanceResponse } from "./interface";
 
 export function zeroAddress() {
   return "0x0000000000000000000000000000000000000000";
@@ -27,7 +27,7 @@ export function asSendRequestObject(
         // ['address', 120, 'sats'],
         resp.push({
           address: r[0] as string,
-          value: r[1] as number,
+          value: new BigNumber(r[1] as number),
           unit: r[2] as UnitEnum,
         });
       } else {
@@ -136,4 +136,78 @@ export async function waitForBlock(
 
 export function isValidAddress(address: string): boolean {
   return ethers.utils.isAddress(address);
+}
+
+export async function balanceFromWei(
+  value: BigNumber.Value | bigint,
+  rawUnit: string,
+  usdPriceCache: boolean = true
+): Promise<BigNumber> {
+  const val = new BigNumber(value.toString());
+  const unit = Mainnet.sanitizeUnit(rawUnit);
+  switch (unit) {
+    case UnitEnum.BCH:
+      return val.div(1e18);
+    case UnitEnum.SAT:
+    case UnitEnum.SATS:
+    case UnitEnum.SATOSHI:
+    case UnitEnum.SATOSHIS:
+      return val.div(1e10)
+    case UnitEnum.WEI:
+      return val;
+    case UnitEnum.USD:
+      const usd =
+        val.div(1e18).times
+        (await ExchangeRate.get("usd", usdPriceCache));
+      return new BigNumber(usd.toFixed(2));
+    default:
+      throw Error(
+        `Balance response type ${JSON.stringify(unit)} not understood`
+      );
+  }
+}
+
+export async function balanceResponseFromWei(
+  value: BigNumber.Value | bigint,
+  usdPriceCache: boolean = true
+): Promise<BalanceResponse> {
+  let response = <BalanceResponse>{};
+  let returnUnits: UnitEnum[] = ["bch", "sat", "usd", "wei"];
+
+  for (const u of returnUnits) {
+    response[u] = await balanceFromWei(value, u, usdPriceCache);
+  }
+  return response;
+}
+
+/**
+ * converts given value and unit into wei
+ *
+ * @param {value} BigNumber.Value           some value
+ * @param {rawUnit} UnitEnum            the unit of value
+ *
+ * @returns a promise to the value in wei
+ */
+
+ export async function amountInWei(
+  value: BigNumber.Value,
+  rawUnit: UnitEnum
+): Promise<BigNumber> {
+  const val = new BigNumber(value.toString());
+  const unit = Mainnet.sanitizeUnit(rawUnit);
+  switch (unit) {
+    case UnitEnum.BCH:
+      return val.times(1e18);
+    case UnitEnum.SATOSHI:
+    case UnitEnum.SAT:
+    case UnitEnum.SATS:
+    case UnitEnum.SATOSHIS:
+      return val.times(1e10);
+    case UnitEnum.USD:
+      let USD_over_BCH = new BigNumber(await ExchangeRate.get("usd"));
+      let WEI_over_BCH = new BigNumber(1e18);
+      return new BigNumber(val.times(WEI_over_BCH.div(USD_over_BCH)).toFixed(2));
+    default:
+      throw Error("Unit of value not defined");
+  }
 }

@@ -1,5 +1,6 @@
 import {
   BaseWallet,
+  BigNumber,
   Mainnet,
   NetworkType,
   UnitEnum,
@@ -32,7 +33,10 @@ import { SignedMessageResponseI, VerifyMessageResponseI } from "mainnet-js";
 import { getNetworkProvider } from "./Network";
 import { Network } from "./index";
 import {
+  amountInWei,
   asSendRequestObject,
+  balanceFromWei,
+  balanceResponseFromWei,
   satToWei,
   waitForBlock,
   watchAddress,
@@ -356,28 +360,27 @@ You can add it manually:
   //#region Funds
   // gets wallet balance in sats, bch and usd
   public async getBalance(
-    rawUnit?: string,
+    rawUnit?: UnitEnum,
     usdPriceCache = true
-  ): Promise<BalanceResponse | number> {
+  ): Promise<BalanceResponse | BigNumber> {
     if (rawUnit) {
       const unit = Mainnet.sanitizeUnit(rawUnit);
-      return await Mainnet.balanceFromSatoshi(
+      return await balanceFromWei(
         await this.getBalanceFromProvider(),
         unit,
         usdPriceCache
       );
     } else {
-      return await Mainnet.balanceResponseFromSatoshi(
+      return await balanceResponseFromWei(
         await this.getBalanceFromProvider(),
         usdPriceCache
       );
     }
   }
 
-  public async getBalanceFromProvider(): Promise<number> {
-    return (await this.provider!.getBalance(this.address!))
-      .div(10 ** 10)
-      .toNumber();
+  // Returns raw balance in wei
+  public async getBalanceFromProvider(): Promise<BigNumber> {
+    return new BigNumber((await this.provider!.getBalance(this.address!)).toString());
   }
 
   public async getMaxAmountToSend(
@@ -396,8 +399,8 @@ You can add it manually:
     );
     const balance = await this.provider!.getBalance(this.address!);
 
-    return await Mainnet.balanceResponseFromSatoshi(
-      weiToSat(balance.sub(gas.mul(gasPrice)))
+    return await balanceResponseFromWei(
+      balance.sub(gas.mul(gasPrice)).toString()
     );
   }
 
@@ -416,13 +419,13 @@ You can add it manually:
 
     const responses: SendResponse[] = [];
     for (const request of sendRequests) {
-      const weiValue = ethers.BigNumber.from(
-        await Mainnet.amountInSatoshi(request.value, request.unit)
-      ).mul(10 ** 10);
+      const weiValue = (
+        await amountInWei(request.value, request.unit)
+      );
 
       const result = await this.ethersSigner!.sendTransaction({
         to: request.address,
-        value: weiValue,
+        value: ethers.BigNumber.from(weiValue.toString()),
         ...overrides,
       });
 
@@ -501,14 +504,14 @@ You can add it manually:
     callback: (balance: BalanceResponse) => void,
     usdPriceRefreshInterval = 30000
   ): CancelWatchFn {
-    let usdPrice = -1;
+    let usdPrice = new BigNumber(-1);
 
     const _callback = async () => {
       const balance = (await this.getBalance(
         undefined,
         false
       )) as BalanceResponse;
-      if (usdPrice !== balance.usd!) {
+      if (!usdPrice.isEqualTo(balance.usd!)) {
         usdPrice = balance.usd!;
         callback(balance);
       }
@@ -526,14 +529,15 @@ You can add it manually:
   // waits for address balance to be greater than or equal to the target value
   // this call halts the execution
   public async waitForBalance(
-    value: number,
+    value: BigNumber.Value,
     rawUnit: UnitEnum = UnitEnum.BCH
   ): Promise<BalanceResponse> {
     return new Promise((resolve) => {
+      value = new BigNumber(value);
       const watchCancel = this.watchBalance(
         async (balance: BalanceResponse) => {
-          const satoshiBalance = await Mainnet.amountInSatoshi(value, rawUnit);
-          if (balance.sat! >= satoshiBalance) {
+          const weiBalance = await amountInWei(value, rawUnit);
+          if (balance.wei!.isGreaterThanOrEqualTo(weiBalance)) {
             await watchCancel();
             resolve(balance);
           }

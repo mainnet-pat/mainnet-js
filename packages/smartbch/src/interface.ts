@@ -4,7 +4,7 @@ import { NetworkType, UnitEnum } from "mainnet-js";
 
 export interface SendRequest {
   address: string;
-  value: number;
+  value: BigNumber.Value;
   unit: UnitEnum;
 }
 
@@ -22,9 +22,10 @@ export interface SendResponse {
 }
 
 export interface BalanceResponse {
-  bch?: number;
-  sat?: number;
-  usd?: number;
+  bch?: BigNumber;
+  sat?: BigNumber;
+  usd?: BigNumber;
+  wei?: BigNumber;
 }
 
 export type CancelWatchFn = () => Promise<void>;

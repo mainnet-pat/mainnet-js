@@ -1,4 +1,5 @@
 import BigNumber from "bignumber.js";
+import { ethers } from "ethers";
 import { RegTestSmartBchWallet, SmartBchWallet } from "./SmartBchWallet";
 
 describe(`Test Ethereum functions`, () => {

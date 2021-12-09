@@ -79,10 +79,10 @@ describe(`Test Ethereum functions`, () => {
       {},
       { gasPrice: 10 ** 10 }
     );
-    expect(sendResult[0].balance!.bch!).toBeGreaterThan(
-      balance.bch! - (0.1 + feeDelta)
+    expect(sendResult[0].balance!.bch!.toNumber()).toBeGreaterThan(
+      balance.bch!.toNumber() - (0.1 + feeDelta)
     );
-    expect(((await bob.getBalance()) as BalanceResponse)!.bch!).toBe(0.1);
+    expect(((await bob.getBalance()) as BalanceResponse)!.bch!.toNumber()).toBe(0.1);
 
     const charlie = await RegTestSmartBchWallet.newRandom();
     const sendManyResult = await alice.send(
@@ -94,15 +94,15 @@ describe(`Test Ethereum functions`, () => {
       { gasPrice: 10 ** 10 }
     );
 
-    expect(sendManyResult[0].balance!.bch!).toBeGreaterThan(
-      balance.bch! - 3 * (0.1 + feeDelta)
+    expect(sendManyResult[0].balance!.bch!.toNumber()).toBeGreaterThan(
+      balance.bch!.toNumber() - 3 * (0.1 + feeDelta)
     );
-    expect(sendManyResult[1].balance!.bch!).toBeGreaterThan(
-      balance.bch! - 3 * (0.1 + feeDelta)
+    expect(sendManyResult[1].balance!.bch!.toNumber()).toBeGreaterThan(
+      balance.bch!.toNumber() - 3 * (0.1 + feeDelta)
     );
 
-    expect(((await bob.getBalance()) as BalanceResponse)!.bch!).toBe(0.2);
-    expect(((await charlie.getBalance()) as BalanceResponse)!.bch!).toBe(0.1);
+    expect(((await bob.getBalance()) as BalanceResponse)!.bch!.toNumber()).toBe(0.2);
+    expect(((await charlie.getBalance()) as BalanceResponse)!.bch!.toNumber()).toBe(0.1);
 
     await charlie.sendMax(
       alice.getDepositAddress(),
@@ -110,7 +110,7 @@ describe(`Test Ethereum functions`, () => {
       { gasPrice: 10 ** 10 }
     );
     expect(
-      ((await charlie.getBalance()) as BalanceResponse)!.sat!
+      ((await charlie.getBalance()) as BalanceResponse)!.sat!.toNumber()
     ).toBeLessThan(50000);
   });
 
@@ -130,7 +130,7 @@ describe(`Test Ethereum functions`, () => {
         getBalance: true,
         getTransactionInfo: true,
       });
-      expect(result.balance!.sat!).toBeGreaterThan(0);
+      expect(result.balance!.sat!.toNumber()).toBeGreaterThan(0);
       expect(result.transactionInfo!.transactionHash.length).toBe(66);
       waitTxResult = true;
     }, 0);
@@ -141,7 +141,7 @@ describe(`Test Ethereum functions`, () => {
         0.001,
         "bch"
       )) as BalanceResponse;
-      expect(result.sat!).toBeGreaterThan(0);
+      expect(result.sat!.toNumber()).toBeGreaterThan(0);
       waitBalanceResult = true;
     }, 0);
 
@@ -163,7 +163,7 @@ describe(`Test Ethereum functions`, () => {
 
     let bobBalanceWatchResult = false;
     const bobBalanceWatchCancel = bob.watchBalance((balance) => {
-      expect(balance.bch!).toBe(0.001);
+      expect(balance.bch!.toNumber()).toBe(0.001);
       bobBalanceWatchCancel();
       bobBalanceWatchResult = true;
     });
@@ -220,7 +220,7 @@ describe(`Test Ethereum functions`, () => {
 
     const response = await wallet.returnTestnetSatoshis();
     delay(3000);
-    expect(response.balance!.sat!).toBeLessThan(50000);
+    expect(response.balance!.sat!.toNumber()).toBeLessThan(50000);
   });
 
   test.skip("Should get testnet sep20 tokens and send them back", async () => {

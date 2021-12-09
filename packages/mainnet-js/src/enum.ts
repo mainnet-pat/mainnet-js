@@ -36,5 +36,6 @@ export const UnitEnum = {
   SATS: literal("sats"),
   SATOSHI: literal("satoshi"),
   SATOSHIS: literal("satoshis"),
+  WEI: literal("wei"),
 };
 export type UnitEnum = typeof UnitEnum[keyof typeof UnitEnum];

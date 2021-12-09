@@ -18,6 +18,9 @@ export { WalletTypeEnum } from "./wallet/enum";
 // models
 export { SendRequest, UtxoItem } from "./wallet/model";
 
+// rate
+export * from "./rate/ExchangeRate";
+
 // utils
 import * as Mainnet from "./util/index";
 export { Mainnet };

@@ -26,6 +26,7 @@ import {
   Sep20TokenInfo,
 } from "./interface";
 
+BigNumber.config({ EXPONENTIAL_AT: [-30, 30] });
 const _cache = {};
 
 /**
