@@ -1,16 +1,16 @@
-import SqlProvider from "../db/SqlProvider.js";
+import { WebhookSqlProvider } from "../webhook/WebhookSqlProvider.js";
 import { TxI } from "../interface.js";
 import { ElectrumRawTransaction } from "../network/interface.js";
 import { balanceResponseFromSatoshi } from "../util/balanceObjectFromSatoshi.js";
 import { Wallet } from "../wallet/Wif.js";
 import { Webhook, WebhookRecurrence, WebhookType } from "./Webhook.js";
-import WebhookWorker from "./WebhookWorker.js";
+import { WebhookWorker } from "./WebhookWorker.js";
 
 export class WebhookBch extends Webhook {
   callback!: (data: any | string | Array<string>) => void;
   wallet!: Wallet;
 
-  db!: SqlProvider;
+  db!: WebhookSqlProvider;
   seenStatuses: string[] = [];
 
   constructor(hook: Webhook | Object) {

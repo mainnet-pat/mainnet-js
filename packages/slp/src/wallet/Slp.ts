@@ -8,7 +8,7 @@ import {
   WatchWallet,
   TestNetWatchWallet,
   RegTestWatchWallet,
-} from "../wallet/Wif.js";
+} from "mainnet-js";
 import {
   SlpFormattedUtxo,
   SlpGenesisOptions,
@@ -24,24 +24,24 @@ import {
   SlpUtxoI,
 } from "../slp/interface.js";
 import { SlpDbProvider } from "../slp/SlpDbProvider.js";
-import { ImageI } from "../qr/interface.js";
-import { qrAddress } from "../qr/Qr.js";
-import { TxI, UtxoI } from "../interface.js";
-import { ElectrumRawTransaction } from "../network/interface.js";
+import { ImageI } from "mainnet-js";
+import { qrAddress } from "mainnet-js";
+import { TxI, UtxoI } from "mainnet-js";
+import { ElectrumRawTransaction } from "mainnet-js";
 import BigNumber from "bignumber.js";
-import { getRelayFeeCache } from "../network/getRelayFeeCache.js";
+import { getRelayFeeCache } from "mainnet-js";
 import {
   buildEncodedTransaction,
   getFeeAmount,
   getSuitableUtxos,
-} from "../transaction/Wif.js";
+} from "mainnet-js";
 import {
   SlpGetGenesisOutputs,
   SlpGetMintOutputs,
   SlpGetSendOutputs,
 } from "../slp/SlpLibAuth.js";
 import { binToHex, Output } from "@bitauth/libauth";
-import { SendRequest } from "./model.js";
+import { SendRequest } from "mainnet-js";
 import {
   SlpCancelWatchFn,
   SlpProvider,
@@ -50,18 +50,56 @@ import {
 } from "../slp/SlpProvider.js";
 import { toCashAddress, toSlpAddress } from "../util/bchaddr.js";
 import { GsppProvider } from "../slp/GsppProvider.js";
-import { delay } from "../util/delay.js";
-import { Util } from "./Util.js";
-import { FeePaidByEnum } from "./enum.js";
+import { delay } from "mainnet-js";
+import { Util } from "mainnet-js";
+import { FeePaidByEnum } from "mainnet-js";
 import {
   getRuntimePlatform,
   RuntimePlatform,
-} from "../util/getRuntimePlatform.js";
+} from "mainnet-js";
+
+export abstract class SlpI {
+  constructor(wallet: Wallet) {
+    this.slpaddr = toSlpAddress(wallet.cashaddr!);
+    this.wallet = wallet;
+  }
+
+  slpaddr: string;
+  wallet: Wallet ;
+  provider: any;
+
+  static get walletType(): any {
+    return undefined;
+  }
+
+  abstract setProvider(provider: any): any;
+  abstract getDepositAddress(): string;
+  abstract getDepositQr(): ImageI;
+  abstract getTokenInfo(tokenId: string): Promise<any | undefined>;
+  abstract getSlpOutpoints(): Promise<String[]>;
+  abstract getSlpUtxos(): Promise<any[]>;
+  abstract getFormattedSlpUtxos(): Promise<any[]>;
+  abstract getBatonUtxos(tokenId?: string): Promise<any[]>;
+  abstract getHistory(tokenId?: string): Promise<any[]>;
+  abstract getLastTransaction(confirmedOnly: boolean): Promise<ElectrumRawTransaction>;
+  abstract getBalance(tokenId: string): Promise<any>;
+  abstract getAllBalances(): Promise<any[]>;
+  abstract watchBalance(callback: any, tokenId: string): Function;
+  abstract waitForBalance(value: any, tokenId: string): Promise<any>;
+  abstract watchTransactions(callback: Function, tokenId?: string): Function;
+  abstract waitForTransaction(tokenId?: string): Promise<any>;
+  abstract genesis(options: any): Promise<any>;
+  abstract nftParentGenesis(options: any): Promise<any>;
+  abstract sendMax(slpaddr: string, tokenId: string): Promise<any>;
+  abstract explorerUrl(txId: string): string;
+  abstract send(requests: any[]): Promise<any>;
+  abstract mint(options: any): Promise<any>;
+}
 
 /**
  * Class to manage an slp enabled wallet.
  */
-export class Slp {
+export class Slp implements SlpI {
   slpaddr: string;
   readonly wallet: Wallet;
   public provider: SlpProvider;
@@ -805,7 +843,7 @@ export class Slp {
    */
   public static async fromId(walletId: string): Promise<Wallet> {
     const wallet = await this.walletType.fromId(walletId);
-    wallet._slpAware = true;
+    wallet.slpAware(true);
     return wallet;
   }
 
@@ -825,7 +863,7 @@ export class Slp {
   ): Promise<Wallet> {
     const wallet = await this.walletType.named(name, dbName, force);
     wallet.derivationPath = "m/44'/245'/0'/0/0";
-    wallet._slpAware = true;
+    wallet.slpAware(true);
     return wallet;
   }
 
@@ -845,7 +883,7 @@ export class Slp {
     derivationPath: string = "m/44'/245'/0'/0/0"
   ): Promise<Wallet> {
     const wallet = await this.walletType.fromSeed(seed, derivationPath);
-    wallet._slpAware = true;
+    wallet.slpAware(true);
     return wallet;
   }
 
@@ -865,7 +903,7 @@ export class Slp {
   ): Promise<Wallet> {
     const wallet = await this.walletType.newRandom(name, dbName);
     wallet.derivationPath = "m/44'/245'/0'/0/0";
-    wallet._slpAware = true;
+    wallet.slpAware(true);
     return wallet;
   }
 
@@ -879,7 +917,7 @@ export class Slp {
   public static async fromWIF(wif: string): Promise<Wallet> {
     const wallet = await this.walletType.fromWIF(wif);
     wallet.derivationPath = "m/44'/245'/0'/0/0";
-    wallet._slpAware = true;
+    wallet.slpAware(true);
     return wallet;
   }
 
@@ -896,7 +934,7 @@ export class Slp {
   public static async watchOnly(address: string): Promise<Wallet> {
     const wallet = await this.walletType.watchOnly(toCashAddress(address));
     wallet.derivationPath = "m/44'/245'/0'/0/0";
-    wallet._slpAware = true;
+    wallet.slpAware(true);
     return wallet;
   }
 
@@ -913,7 +951,7 @@ export class Slp {
   public static async fromCashaddr(address: string): Promise<Wallet> {
     const wallet = await this.walletType.fromCashaddr(address);
     wallet.derivationPath = "m/44'/245'/0'/0/0";
-    wallet._slpAware = true;
+    wallet.slpAware(true);
     return wallet;
   }
 
@@ -930,7 +968,7 @@ export class Slp {
   public static async fromSlpaddr(address: string): Promise<Wallet> {
     const wallet = await this.walletType.fromSlpaddr(address);
     wallet.derivationPath = "m/44'/245'/0'/0/0";
-    wallet._slpAware = true;
+    wallet.slpAware(true);
     return wallet;
   }
   //#endregion
@@ -1009,3 +1047,29 @@ export class RegTestWatchSlp extends Slp {
   }
 }
 //#endregion
+
+export const InstallSlpMixins = () => {
+  const mixin = (walletClass: any, slpClass: any) => {
+    Object.defineProperty(walletClass, "slp", {
+      get: function() {
+        return slpClass;
+      },
+      configurable: true,
+      enumerable: true
+    });
+  }
+
+  mixin(Wallet, Slp);
+  mixin(TestNetWallet, TestNetSlp);
+  mixin(RegTestWallet, RegTestSlp);
+
+  mixin(WifWallet, WifSlp);
+  mixin(TestNetWifWallet, TestNetWifSlp);
+  mixin(RegTestWifWallet, RegTestWifSlp);
+
+  mixin(WatchWallet, WatchSlp);
+  mixin(TestNetWatchWallet, TestNetWatchSlp);
+  mixin(RegTestWatchWallet, RegTestWatchSlp);
+}
+
+InstallSlpMixins();

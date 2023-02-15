@@ -1,4 +1,4 @@
-import { Network, TxI } from "../interface.js";
+import { Network } from "mainnet-js";
 import {
   GsppTx,
   SlpTokenBalance,
@@ -15,14 +15,14 @@ import {
   _emptyTokenBalance,
 } from "./SlpProvider.js";
 import axios from "axios";
-import { btoa } from "../util/base64.js";
+import { btoa } from "mainnet-js";
 
 //import EventSource from "../../polyfill/eventsource.js";
 import EventSource from "../util/eventsource.js";
 import {
   getRuntimePlatform,
   RuntimePlatform,
-} from "../util/getRuntimePlatform.js";
+} from "mainnet-js";
 
 export class GsppProvider implements SlpProvider {
   public static defaultServers = {

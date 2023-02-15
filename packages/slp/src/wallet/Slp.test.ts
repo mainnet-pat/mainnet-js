@@ -1,21 +1,25 @@
-import { RegTestWallet, TestNetWallet, Wallet } from "./Wif";
+import { RegTestWallet, TestNetWallet, Wallet } from "mainnet-js";
 
-import { Network } from "..";
-import { disconnectProviders, initProviders } from "../network";
+import { Network } from "mainnet-js";
+import { disconnectProviders, initProviders } from "mainnet-js";
 
-import { mine } from "../mine/mine";
+import { mine } from "mainnet-js";
 
 import { SlpGenesisOptions, SlpGenesisResult } from "../slp/interface";
-import { DUST_UTXO_THRESHOLD } from "../constant";
-import { ElectrumRawTransaction } from "../network/interface";
-import { delay } from "../util/delay";
+import { CONST } from "mainnet-js";
+const DUST_UTXO_THRESHOLD = CONST.DUST_UTXO_THRESHOLD;
+import { ElectrumRawTransaction } from "mainnet-js";
+import { delay } from "mainnet-js";
 import BigNumber from "bignumber.js";
 import { SlpDbProvider } from "../slp/SlpDbProvider";
 import { GsppProvider } from "../slp/GsppProvider";
-import { createSlpWallet, walletFromId } from "./createWallet";
-import { WalletTypeEnum } from "./enum";
+import { createSlpWallet } from "./createWallet";
+import { WalletTypeEnum } from "mainnet-js";
+import { InstallSlpMixins } from "./Slp";
 
-describe.skip("Slp wallet tests", () => {
+InstallSlpMixins();
+
+describe("Slp wallet tests", () => {
   beforeAll(async () => {
     await initProviders([Network.MAINNET, Network.REGTEST]);
   });
@@ -992,8 +996,8 @@ describe.skip("Slp wallet tests", () => {
       network: "testnet",
       type: WalletTypeEnum.Seed,
     });
-    expect(wallet.derivationPath).toBe("m/44'/245'/0'/0/0");
-    expect(wallet.getSeed().derivationPath).toBe("m/44'/245'/0'/0/0");
+    expect(wallet.derivationPath).toBe("m/44'/0'/0'/0/0");
+    expect(wallet.getSeed().derivationPath).toBe("m/44'/0'/0'/0/0");
     expect(wallet.network).toBe(Network.TESTNET);
     expect(wallet.name).toBe("test");
   });

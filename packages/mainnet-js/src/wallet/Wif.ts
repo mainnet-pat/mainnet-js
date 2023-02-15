@@ -71,19 +71,19 @@ import { sumTokenAmounts, sumUtxoValue } from "../util/sumUtxoValue.js";
 import { sumSendRequestAmounts } from "../util/sumSendRequestAmounts.js";
 import { ElectrumRawTransaction } from "../network/interface.js";
 import { getRelayFeeCache } from "../network/getRelayFeeCache.js";
-import {
-  RegTestSlp,
-  RegTestWatchSlp,
-  RegTestWifSlp,
-  Slp,
-  TestNetSlp,
-  TestNetWatchSlp,
-  TestNetWifSlp,
-  WatchSlp,
-  WifSlp,
-} from "./Slp.js";
+// import {
+//   RegTestSlp,
+//   RegTestWatchSlp,
+//   RegTestWifSlp,
+//   Slp,
+//   TestNetSlp,
+//   TestNetWatchSlp,
+//   TestNetWifSlp,
+//   WatchSlp,
+//   WifSlp,
+// } from "./Slp.js";
 import axios from "axios";
-import { SlpSendResponse } from "../slp/interface.js";
+// import { SlpSendResponse } from "../slp/interface.js";
 import { toCashAddress } from "../util/bchaddr.js";
 import {
   RegTestUtil,
@@ -113,6 +113,39 @@ import { ImageI } from "../qr/interface.js";
 
 //#endregion Imports
 
+abstract class SlpI {
+  slpaddr: string;
+  wallet: Wallet;
+  provider: any;
+
+  static get walletType(): any {
+    return undefined;
+  }
+
+  abstract setProvider(provider: any): any;
+  abstract getDepositAddress(): string;
+  abstract getDepositQr(): ImageI;
+  abstract getTokenInfo(tokenId: string): Promise<any | undefined>;
+  abstract getSlpOutpoints(): Promise<String[]>;
+  abstract getSlpUtxos(): Promise<any[]>;
+  abstract getFormattedSlpUtxos(): Promise<any[]>;
+  abstract getBatonUtxos(tokenId?: string): Promise<any[]>;
+  abstract getHistory(tokenId?: string): Promise<any[]>;
+  abstract getLastTransaction(confirmedOnly: boolean): Promise<ElectrumRawTransaction>;
+  abstract getBalance(tokenId: string): Promise<any>;
+  abstract getAllBalances(): Promise<any[]>;
+  abstract watchBalance(callback: any, tokenId: string): Function;
+  abstract waitForBalance(value: any, tokenId: string): Promise<any>;
+  abstract watchTransactions(callback: Function, tokenId?: string): Function;
+  abstract waitForTransaction(tokenId?: string): Promise<any>;
+  abstract genesis(options: any): Promise<any>;
+  abstract nftParentGenesis(options: any): Promise<any>;
+  abstract sendMax(slpaddr: string, tokenId: string): Promise<any>;
+  abstract explorerUrl(txId: string): string;
+  abstract send(requests: any[]): Promise<any>;
+  abstract mint(options: any): Promise<any>;
+}
+
 /**
  * Class to manage a bitcoin cash wallet.
  */
@@ -128,26 +161,30 @@ export class Wallet extends BaseWallet {
   publicKey?: Uint8Array;
   publicKeyHash?: Uint8Array;
   networkPrefix: CashAddressNetworkPrefix;
-  _slp?: Slp;
-  _slpAware: boolean = false; // a flag which activates utxo checking against an external slp indexer
-  _slpSemiAware: boolean = false; // a flag which requires an utxo to have more than 546 sats to be spendable and counted in the balance
-  _util?: Util;
+  protected _slp?: any;//SlpI;
+  protected _slpAware: boolean = false; // a flag which activates utxo checking against an external slp indexer
+  protected _slpSemiAware: boolean = false; // a flag which requires an utxo to have more than 546 sats to be spendable and counted in the balance
+  protected _util?: Util;
   static signedMessage: SignedMessageI = new SignedMessage();
 
   //#region Accessors
   // interface to slp functions. see Slp.ts
   public get slp() {
     if (!this._slp) {
-      this._slp = new Slp(this);
-      this._slpAware = true;
+      try {
+        this._slp = new (this.constructor as any).slp(this);
+        this._slpAware = true;
+      } catch {
+        throw Error("You are trying to access SLP functionality. Try invoking `InstallSlpMixins` first.");
+      }
     }
 
     return this._slp;
   }
 
   // interface to slp functions. see Slp.ts
-  public static get slp() {
-    return Slp;
+  public static get slp(): any {
+    return undefined;
   }
 
   // interface to util functions. see Util.ts
@@ -633,7 +670,7 @@ export class Wallet extends BaseWallet {
     if (this._slpAware) {
       const [bchUtxos, slpOutpoints] = await Promise.all([
         this.provider!.getUtxos(address),
-        this.slp.getSlpOutpoints(),
+        (this as any).slp?.getSlpOutpoints() ?? [],
       ]);
       return bchUtxos.filter(
         (bchutxo) =>
@@ -1734,41 +1771,41 @@ export class TestNetWallet extends Wallet {
     }
   }
 
-  // will receive 10 testnet tokens, rate limits apply
-  async getTestnetSlp(tokenId: string): Promise<string> {
-    try {
-      const response = await axios.post(
-        `${TestNetWallet.faucetServer}/faucet/get_testnet_slp`,
-        { slpaddr: this.slp.slpaddr, tokenId: tokenId }
-      );
-      const data = response.data;
-      return data.txId;
-    } catch (e) {
-      //console.log(e);
-      //console.log(e.response ? e.response.data : "");
-      throw e;
-    }
-  }
+  // // will receive 10 testnet tokens, rate limits apply
+  // async getTestnetSlp(tokenId: string): Promise<string> {
+  //   try {
+  //     const response = await axios.post(
+  //       `${TestNetWallet.faucetServer}/faucet/get_testnet_slp`,
+  //       { slpaddr: this.slp.slpaddr, tokenId: tokenId }
+  //     );
+  //     const data = response.data;
+  //     return data.txId;
+  //   } catch (e) {
+  //     //console.log(e);
+  //     //console.log(e.response ? e.response.data : "");
+  //     throw e;
+  //   }
+  // }
 
-  // be nice and return them back
-  async returnTestnetSlp(tokenId: string): Promise<SlpSendResponse> {
-    try {
-      const response = await axios.post(
-        `${TestNetWallet.faucetServer}/faucet/get_addresses`
-      );
-      const data = response.data;
-      return await this.slp.sendMax(data.slptest, tokenId);
-    } catch (e: any) {
-      console.log(e);
-      console.log(e.response ? e.response.data : "");
-      throw e;
-    }
-  }
+  // // be nice and return them back
+  // async returnTestnetSlp(tokenId: string): Promise<SlpSendResponse> {
+  //   try {
+  //     const response = await axios.post(
+  //       `${TestNetWallet.faucetServer}/faucet/get_addresses`
+  //     );
+  //     const data = response.data;
+  //     return await this.slp.sendMax(data.slptest, tokenId);
+  //   } catch (e: any) {
+  //     console.log(e);
+  //     console.log(e.response ? e.response.data : "");
+  //     throw e;
+  //   }
+  // }
 
-  // interface to static slp functions. see Slp.ts
-  public static get slp() {
-    return TestNetSlp;
-  }
+  // // interface to static slp functions. see Slp.ts
+  // public static get slp() {
+  //   return TestNetSlp;
+  // }
 
   // interface to static util functions. see Util.ts
   public static get util() {
@@ -1785,10 +1822,10 @@ export class RegTestWallet extends Wallet {
     super(name, NetworkType.Regtest);
   }
 
-  // interface to static slp functions. see Slp.ts
-  public static get slp() {
-    return RegTestSlp;
-  }
+  // // interface to static slp functions. see Slp.ts
+  // public static get slp() {
+  //   return RegTestSlp;
+  // }
 
   // interface to static util functions. see Util.ts
   public static get util() {
@@ -1806,10 +1843,10 @@ export class WifWallet extends Wallet {
     super(name, NetworkType.Mainnet, WalletTypeEnum.Wif);
   }
 
-  // interface to static slp functions. see Slp.ts
-  public static get slp() {
-    return WifSlp;
-  }
+  // // interface to static slp functions. see Slp.ts
+  // public static get slp() {
+  //   return WifSlp;
+  // }
 
   // interface to static util functions. see Util.ts
   public static get util() {
@@ -1827,10 +1864,10 @@ export class TestNetWifWallet extends Wallet {
     super(name, NetworkType.Testnet, WalletTypeEnum.Wif);
   }
 
-  // interface to static slp functions. see Slp.ts
-  public static get slp() {
-    return TestNetWifSlp;
-  }
+  // // interface to static slp functions. see Slp.ts
+  // public static get slp() {
+  //   return TestNetWifSlp;
+  // }
 
   // interface to static util functions. see Util.ts
   public static get util() {
@@ -1848,10 +1885,10 @@ export class RegTestWifWallet extends Wallet {
     super(name, NetworkType.Regtest, WalletTypeEnum.Wif);
   }
 
-  // interface to static slp functions. see Slp.ts
-  public static get slp() {
-    return RegTestWifSlp;
-  }
+  // // interface to static slp functions. see Slp.ts
+  // public static get slp() {
+  //   return RegTestWifSlp;
+  // }
 
   // interface to static util functions. see Util.ts
   public static get util() {
@@ -1869,10 +1906,10 @@ export class WatchWallet extends Wallet {
     super(name, NetworkType.Mainnet, WalletTypeEnum.Watch);
   }
 
-  // interface to static slp functions. see Slp.ts
-  public static get slp() {
-    return WatchSlp;
-  }
+  // // interface to static slp functions. see Slp.ts
+  // public static get slp() {
+  //   return WatchSlp;
+  // }
 
   // interface to static util functions. see Util.ts
   public static get util() {
@@ -1890,10 +1927,10 @@ export class TestNetWatchWallet extends Wallet {
     super(name, NetworkType.Testnet, WalletTypeEnum.Watch);
   }
 
-  // interface to static slp functions. see Slp.ts
-  public static get slp() {
-    return TestNetWatchSlp;
-  }
+  // // interface to static slp functions. see Slp.ts
+  // public static get slp() {
+  //   return TestNetWatchSlp;
+  // }
 
   // interface to static util functions. see Util.ts
   public static get util() {
@@ -1911,10 +1948,10 @@ export class RegTestWatchWallet extends Wallet {
     super(name, NetworkType.Regtest, WalletTypeEnum.Watch);
   }
 
-  // interface to static slp functions. see Slp.ts
-  public static get slp() {
-    return RegTestWatchSlp;
-  }
+  // // interface to static slp functions. see Slp.ts
+  // public static get slp() {
+  //   return RegTestWatchSlp;
+  // }
 
   // interface to static util functions. see Util.ts
   public static get util() {

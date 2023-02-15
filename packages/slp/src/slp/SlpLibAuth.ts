@@ -9,7 +9,10 @@ import {
 } from "@bitauth/libauth";
 import { parseSLP } from "slp-parser";
 
-import { SendRequest } from "../wallet/model.js";
+import { SendRequest } from "mainnet-js";
+import { CONST } from "mainnet-js";
+const DUST_UTXO_THRESHOLD = CONST.DUST_UTXO_THRESHOLD;
+
 import {
   SlpGenesisOptions,
   SlpMintOptions,
@@ -19,8 +22,7 @@ import {
 } from "../slp/interface.js";
 
 import BigNumber from "bignumber.js";
-import { DUST_UTXO_THRESHOLD } from "../constant.js";
-import { UnitEnum } from "../enum.js";
+import { UnitEnum } from "mainnet-js";
 import { isValidAddress, toCashAddress } from "../util/bchaddr.js";
 
 export const bigIntToBinUint64BE = (value) => {

@@ -1,6 +1,7 @@
 import { binToHex } from "@bitauth/libauth";
 import { parseSLP } from "slp-parser";
-import { DUST_UTXO_THRESHOLD } from "../constant";
+import { CONST } from "mainnet-js";
+const DUST_UTXO_THRESHOLD = CONST.DUST_UTXO_THRESHOLD;
 import {
   SlpGetGenesisOutputs,
   SlpGetMintOutputs,
@@ -11,9 +12,12 @@ import {
   SlpSendRequest,
   SlpTokenType,
 } from "../slp/interface";
-import { RegTestWallet } from "../wallet/Wif";
+import { RegTestWallet } from "mainnet-js";
 import { SlpUtxoI } from "./interface";
 import BigNumber from "bignumber.js";
+import { InstallSlpMixins } from "../wallet/Slp";
+
+InstallSlpMixins();
 
 test.skip("Test SLP genesis txo bytecode per SLP Spec", async () => {
   const wallet = await RegTestWallet.newRandom();

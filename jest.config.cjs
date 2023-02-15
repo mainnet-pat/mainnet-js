@@ -2,7 +2,7 @@ module.exports = {
   rootDir: "./",
   preset: "ts-jest/presets/default-esm",
   resolver: "ts-jest-resolver",
-  collectCoverage: true,
+  collectCoverage: false,
   collectCoverageFrom: [
     "**/*.{js,jsx,ts}",
     "!**/node_modules/**",
@@ -15,6 +15,7 @@ module.exports = {
   ],
   roots: [
     "<rootDir>/packages/mainnet-js/src",
+    "<rootDir>/packages/slp/src",
     "<rootDir>/packages/contract/src",
     "<rootDir>/packages/smartbch/src",
   ],

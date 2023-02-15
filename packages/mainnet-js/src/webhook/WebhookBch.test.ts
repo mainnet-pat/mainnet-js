@@ -1,7 +1,11 @@
-import WebhookWorker from "../webhook/WebhookWorker";
-import { RegTestWallet } from "../wallet/Wif";
-import { mine } from "../mine/mine";
-import { Webhook, WebhookRecurrence, WebhookType } from "./Webhook";
+import { RegTestWallet } from "../wallet/Wif.js";
+import { mine } from "../mine/mine.js";
+import { WebhookBch } from "./WebhookBch.js";
+import { WebhookSqlProvider } from "./WebhookSqlProvider.js";
+import { WebhookWorker } from "./WebhookWorker.js";
+import { Webhook, WebhookType, WebhookRecurrence } from "./Webhook.js";
+
+WebhookSqlProvider.RegisterWebhookType("", WebhookBch);
 
 let worker: WebhookWorker;
 let alice;

@@ -1,7 +1,6 @@
-import SqlProvider from "../db/SqlProvider.js";
 import { TxI } from "../interface.js";
-
 import axios from "axios";
+import { WebhookSqlProvider } from "./WebhookSqlProvider.js";
 
 export enum WebhookType {
   transactionIn = "transaction:in",
@@ -32,7 +31,7 @@ export class Webhook {
   tokenId?: string; // slp only
   expires_at!: Date;
 
-  db!: SqlProvider;
+  db!: WebhookSqlProvider;
 
   constructor(hook: Webhook | Object) {
     Object.assign(this, hook);

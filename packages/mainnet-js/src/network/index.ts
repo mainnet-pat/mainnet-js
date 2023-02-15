@@ -4,3 +4,5 @@ export {
   initProviders,
   disconnectProviders,
 } from "./Connection.js";
+export * from "./interface.js";
+export * from "./getRelayFeeCache.js";

@@ -1,0 +1,11 @@
+{
+  "extends": "./tsconfig",
+  "compilerOptions": {
+    "baseUrl": "src",
+    "paths": {
+      "pg": ["false*"]
+    }
+  },
+  "include": ["src/**/*.ts"],
+  "exclude": ["node_modules/**", "dist/**", "src/**/*test.ts"]
+}

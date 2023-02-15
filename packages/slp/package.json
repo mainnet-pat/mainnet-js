@@ -1,0 +1,89 @@
+{
+  "type": "module",
+  "test": "jest",
+  "license": "MIT",
+  "repository": {
+    "url": "https://github.com/mainnet-cash/mainnet-js/"
+  },
+  "bugs": {
+    "url": "https://github.com/mainnet-cash/mainnet-js/issues"
+  },
+  "name": "@mainnet-cash/slp",
+  "version": "1.0.11",
+  "homepage": "https://mainnet.cash",
+  "module": "dist/module/index.js",
+  "browser": {
+    "http": false,
+    "https": false,
+    "fs": false,
+    "url": false
+  },
+  "types": "dist/module/index.d.ts",
+  "exports": {
+    "import": "./dist/module/index.js"
+  },
+  "scripts": {
+    "clean": "rm -fr dist/* && rm -fr jest/playwright/*",
+    "cli": "npx ts-node src/cli.ts",
+    "lint": "eslint . --ext .ts",
+    "prebuild": "yarn install",
+    "build": "yarn clean && yarn build:module && yarn build:browser",
+    "build:module": "tsc",
+    "build:browser": "npx webpack",
+    "build:production": "yarn clean && yarn build:module && NODE_ENV=production yarn build:browser",
+    "demo": "npx reload --dir=demo/",
+    "publish:public": "yarn publish --access public",
+    "test": "node --max-old-space-size=8000  --expose-gc --experimental-vm-modules ../../node_modules/jest/bin/jest.js --runInBand  --config jest.config.cjs  --logHeapUsage  --forceExit",
+    "test:browser": "PW_EXPERIMENTAL_TS_ESM=1 NODE_OPTIONS=\"--experimental-vm-modules\" node --experimental-vm-modules ../../node_modules/jest/bin/jest.js --runInBand --config jest.config.browser.cjs --detectOpenHandles",
+    "reload": "npx reload --dir=../../jest/playwright "
+  },
+  "dependencies": {
+    "@bitauth/libauth": "=v2.0.0-alpha.7",
+    "async-mutex": "^0.3.1",
+    "axios": "^0.21.1",
+    "bchaddrjs-slp": "^0.2.12",
+    "bigint-polyfill": "^0.1.0",
+    "bignumber": "^1.1.0",
+    "bignumber.js": "^9.0.1",
+    "bip39": "^3.0.3",
+    "buffer": "^6.0.3",
+    "buffer-lite": "^1.0.0",
+    "cashaddrjs": "^0.4.4",
+    "electrum-cash": "^2.0.10",
+    "events": "^3.2.0",
+    "eventsource": "^1.0.7",
+    "fake-indexeddb": "^3.1.2",
+    "mainnet-js": "^1.0.11",
+    "qrcode-svg": "1.1.0",
+    "slp-parser": "^0.0.4"
+  },
+  "devDependencies": {},
+  "optionalDependencies": {
+    "@types/pg": "8.6.0",
+    "@types/pg-format": "^1.0.1",
+    "assert": "^2.0.0",
+    "dexie": "3.2.2",
+    "dotenv": "^10.0.0",
+    "node-postgres": "^0.6.2",
+    "parse-database-url": "^0.3.0",
+    "pg": "8.5.1",
+    "pg-format": "^1.0.4",
+    "pg-native": "^3.0.0",
+    "stream-browserify": "^3.0.0"
+  },
+  "testPathIgnorePatterns": [
+    "dist"
+  ],
+  "sideEffects": [
+    "src/rate/ExchangeRate.ts",
+    "src/network/getRelayFeeCache.ts",
+    "src/network/default.ts",
+    "src/util/eventsource.ts"
+  ],
+  "keywords": [
+    "bch",
+    "bitcoin cash",
+    "wasm"
+  ],
+  "author": "readcash"
+}

@@ -1,5 +1,5 @@
-import { Network } from "..";
-import { disconnectProviders, initProviders } from "../network";
+import { Network } from "mainnet-js";
+import { disconnectProviders, initProviders } from "mainnet-js";
 import { SlpDbProvider } from "./SlpDbProvider";
 import axios from "axios";
 

@@ -10,6 +10,18 @@ import {
 
 import { hash160 } from "./hash160.js";
 
+const prefixMap = {
+  bitcoincash: "simpleledger",
+  bchtest: "slptest",
+  bchreg: "slpreg",
+};
+
+const slpPrefixMap = {
+  simpleledger: "bitcoincash",
+  slptest: "bchtest",
+  slpreg: "bchreg",
+};
+
 export function deriveCashaddr(
   privateKey: Uint8Array,
   networkPrefix: CashAddressNetworkPrefix
@@ -75,12 +87,42 @@ export function toCashaddr(tokenaddr: string): string {
 
   if (typeof result === "string") throw new Error(result);
 
+  const prefix = slpPrefixMap[result.prefix] ?? result.prefix;
+
   return encodeCashAddress(
-    result.prefix as CashAddressNetworkPrefix,
+    prefix as CashAddressNetworkPrefix,
     CashAddressType.p2pkh,
     result.payload
   );
 }
+
+export function toSlpaddr(cashaddr: string): string {
+  let result:
+    | string
+    | { payload: Uint8Array; prefix: string; version: number }
+    | undefined;
+
+  // If the address has a prefix decode it as is
+  if (cashaddr.includes(":")) {
+    result = decodeCashAddressFormat(cashaddr);
+  }
+  // otherwise, derive the network from the cashaddr without prefix
+  else {
+    result = decodeCashAddressFormatWithoutPrefix(cashaddr);
+  }
+
+  if (typeof result === "string") throw new Error(result);
+
+  const prefix = prefixMap[result.prefix] ?? result.prefix;
+
+  return encodeCashAddress(
+    prefix as any,
+    CashAddressType.p2pkh,
+    result.payload
+  );
+}
+
+
 
 export function toTokenaddr(cashaddr: string): string {
   let result:
@@ -99,8 +141,10 @@ export function toTokenaddr(cashaddr: string): string {
 
   if (typeof result === "string") throw new Error(result);
 
+  const prefix = prefixMap[result.prefix] ?? result.prefix;
+
   return encodeCashAddress(
-    result.prefix as CashAddressNetworkPrefix,
+    prefix,
     CashAddressType.p2pkhWithTokens,
     result.payload
   );

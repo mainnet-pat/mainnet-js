@@ -1,12 +1,13 @@
+import { Webhook, Wallet, WebhookRecurrence, WebhookWorker, WebhookType } from "mainnet-js";
 import { GsppTx, SlpDbTx, SlpTxI } from "../slp/index.js";
 import {
   SlpCancelWatchFn,
   SlpWatchTransactionCallback,
 } from "../slp/SlpProvider.js";
 import { toSlpAddress } from "../util/bchaddr.js";
-import { Wallet } from "../wallet/Wif.js";
-import { Webhook, WebhookRecurrence, WebhookType } from "./Webhook.js";
-import WebhookWorker from "./WebhookWorker.js";
+import { InstallSlpMixins } from "../wallet/Slp.js";
+
+InstallSlpMixins();
 
 export class WebhookSlp extends Webhook {
   callback!: SlpWatchTransactionCallback;

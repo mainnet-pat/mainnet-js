@@ -1,7 +1,5 @@
-import WebhookWorker from "../webhook/WebhookWorker";
-import { RegTestWallet } from "../wallet/Wif";
-import { mine } from "../mine/mine";
-import { Webhook } from "./Webhook";
+import { Webhook } from "./Webhook.js";
+import { WebhookWorker } from "./WebhookWorker.js";
 
 let worker: WebhookWorker;
 let alice = "";

@@ -1,13 +1,10 @@
-import SqlProvider from "../db/SqlProvider.js";
+import { Webhook } from "./Webhook.js";
+import { WebhookSqlProvider } from "./WebhookSqlProvider.js";
 import { RegisterWebhookParams } from "./interface.js";
 
-import { Webhook } from "./Webhook";
-
-export default class WebhookWorker {
+export class WebhookWorker {
   activeHooks: Map<number, Webhook> = new Map();
-  callbacks: Map<number, (data: any | string | Array<string>) => void> =
-    new Map();
-  db: SqlProvider;
+  db: WebhookSqlProvider;
   checkInterval: any = undefined;
 
   private static _instance: WebhookWorker;
@@ -22,7 +19,7 @@ export default class WebhookWorker {
   }
 
   constructor() {
-    this.db = new SqlProvider();
+    this.db = new WebhookSqlProvider();
   }
 
   async init(): Promise<void> {

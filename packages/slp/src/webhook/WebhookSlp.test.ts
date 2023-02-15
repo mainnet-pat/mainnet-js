@@ -1,8 +1,8 @@
-import WebhookWorker from "./WebhookWorker";
-import { RegTestWallet } from "../wallet/Wif";
-import { mine } from "../mine/mine";
-import { Webhook, WebhookRecurrence, WebhookType } from "./Webhook";
+import { RegTestWallet, Webhook, WebhookRecurrence, WebhookSqlProvider, WebhookType, WebhookWorker, delay } from "mainnet-js";
 import { GsppProvider, SlpDbProvider, SlpGenesisOptions } from "../slp";
+import { WebhookSlp } from "./WebhookSlp";
+
+WebhookSqlProvider.RegisterWebhookType("slp", WebhookSlp);
 
 let worker: WebhookWorker;
 let alice;
@@ -15,39 +15,35 @@ const serversGspp = { ...{}, ...GsppProvider.defaultServers };
 /**
  * @jest-environment jsdom
  */
-describe.skip("Webhook worker tests", () => {
+describe("Webhook worker tests", () => {
   beforeAll(async () => {
-    try {
-      if (process.env.PRIVATE_WIF) {
-        alice = process.env.ADDRESS!;
-        aliceWif = `wif:regtest:${process.env.PRIVATE_WIF!}`;
-      } else {
-        console.error("regtest env vars not set");
-      }
-
-      Webhook.debug.setupAxiosMocks();
-      worker = await WebhookWorker.instance();
-
-      const genesisOptions: SlpGenesisOptions = {
-        name: "Webhook Token",
-        ticker: "WHT",
-        decimals: 2,
-        initialAmount: 10000,
-        documentUrl: "https://mainnet.cash",
-        documentHash:
-          "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef",
-      };
-
-      const aliceWallet = await RegTestWallet.slp.fromId(aliceWif);
-      const genesisResult = await aliceWallet.slp.genesis(genesisOptions);
-      tokenId = genesisResult.tokenId;
-
-      SlpDbProvider.defaultServers.testnet =
-        SlpDbProvider.defaultServers.regtest;
-      GsppProvider.defaultServers.testnet = GsppProvider.defaultServers.regtest;
-    } catch (e: any) {
-      throw e;
+    if (process.env.PRIVATE_WIF) {
+      alice = process.env.ADDRESS!;
+      aliceWif = `wif:regtest:${process.env.PRIVATE_WIF!}`;
+    } else {
+      console.error("regtest env vars not set");
     }
+
+    Webhook.debug.setupAxiosMocks();
+    worker = await WebhookWorker.instance();
+
+    const genesisOptions: SlpGenesisOptions = {
+      name: "Webhook Token",
+      ticker: "WHT",
+      decimals: 2,
+      initialAmount: 10000,
+      documentUrl: "https://mainnet.cash",
+      documentHash:
+        "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef",
+    };
+
+    const aliceWallet = await RegTestWallet.slp.fromId(aliceWif);
+    const genesisResult = await aliceWallet.slp.genesis(genesisOptions);
+    tokenId = genesisResult.tokenId;
+
+    SlpDbProvider.defaultServers.testnet =
+      SlpDbProvider.defaultServers.regtest;
+    GsppProvider.defaultServers.testnet = GsppProvider.defaultServers.regtest;
   });
 
   beforeEach(async () => {
@@ -56,6 +52,7 @@ describe.skip("Webhook worker tests", () => {
 
   afterEach(async () => {
     Webhook.debug.reset();
+    worker.deleteAllWebhooks();
   });
 
   afterAll(async () => {
@@ -67,45 +64,36 @@ describe.skip("Webhook worker tests", () => {
   });
 
   test("Test non-recurrent hook to be deleted after successful call", async () => {
-    try {
-      const aliceWallet = await RegTestWallet.slp.fromId(aliceWif);
-      const bobWallet = await RegTestWallet.slp.newRandom();
-      await worker.registerWebhook({
-        cashaddr: bobWallet.slp.slpaddr,
-        url: "http://example.com/success",
-        type: WebhookType.slpTransactionIn,
-        recurrence: WebhookRecurrence.once,
-        tokenId: tokenId,
-      });
+    const aliceWallet = await RegTestWallet.slp.fromId(aliceWif);
+    const bobWallet = await RegTestWallet.slp.newRandom();
+    await worker.registerWebhook({
+      cashaddr: bobWallet.slp.slpaddr,
+      url: "http://example.com/success",
+      type: WebhookType.slpTransactionIn,
+      recurrence: WebhookRecurrence.once,
+      tokenId: tokenId,
+    });
 
-      await Promise.all([
-        aliceWallet.slp.send([
-          {
-            slpaddr: bobWallet.slp.slpaddr,
-            value: 1000,
-            tokenId: tokenId,
-          },
-        ]),
-        bobWallet.slp.waitForTransaction(),
-      ]);
+    await Promise.all([
+      aliceWallet.slp.send([
+        {
+          slpaddr: bobWallet.slp.slpaddr,
+          value: 1000,
+          tokenId: tokenId,
+        },
+      ]),
+      bobWallet.slp.waitForTransaction(),
+    ]);
 
-      // return funds
-      // let sendResponse2 = await bobWallet.sendMax(aliceWallet.cashaddr!);
 
-      await new Promise((resolve) =>
-        setTimeout(async () => {
-          expect(
-            Webhook.debug.responses["http://example.com/success"].length
-          ).toBe(1);
-          expect(worker.activeHooks.size).toBe(0);
+    // return funds
+    // let sendResponse2 = await bobWallet.sendMax(aliceWallet.cashaddr!);
 
-          resolve(true);
-        }, 3000)
-      );
-    } catch (e: any) {
-      console.log(e, e.stack, e.message);
-      throw e;
-    }
+    await delay(3000);
+    expect(
+      Webhook.debug.responses["http://example.com/success"]?.length
+    ).toBe(1);
+    expect(worker.activeHooks.size).toBe(0);
   });
 
   test("Test non-recurrent hook to be not deleted after failed call", async () => {
