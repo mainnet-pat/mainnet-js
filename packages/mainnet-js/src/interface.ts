@@ -22,6 +22,7 @@ export interface UtxoI {
   height?: number;
   coinbase?: boolean;
   token?: TokenI;
+  privateKey?: Uint8Array;
 }
 
 export interface ElectrumBalanceI {

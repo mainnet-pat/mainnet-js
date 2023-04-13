@@ -136,7 +136,7 @@ export function prepareInputs(
       unlockingBytecode: {
         compiler,
         data: {
-          keys: { privateKeys: { key: signingKey } },
+          keys: { privateKeys: { key: i.privateKey || signingKey } },
         },
         valueSatoshis: BigInt(utxoTxnValue),
         script: "unlock",
@@ -356,9 +356,16 @@ export async function getSuitableUtxos(
   }
 
   const addEnsured = (suitableUtxos) => {
-    return [...suitableUtxos, ...ensureUtxos].filter(
-      (val, index, array) => array.indexOf(val) === index
-    );
+    const result: UtxoI[] = [];
+    for (const item of [...ensureUtxos, ...suitableUtxos]) {
+      const foundItem = result.find(val => val.txid === item.txid && val.vout === item.vout);
+      if (foundItem) {
+        foundItem.privateKey = item.privateKey || foundItem.privateKey;
+      } else {
+        result.push(item);
+      }
+    }
+    return result;
   };
 
   // if the fee is split with a feePaidBy option, skip checking change.
